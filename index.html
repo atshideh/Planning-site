@@ -636,7 +636,13 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
         }
         lsSet(SESSION_KEY, JSON.stringify(sess)); lsSet(TOKEN_KEY, null); if (el) el.remove(); return;
       } catch (e) {
-        message = e.status === 404 ? (sess.kind === 'team' ? 'دسترسی تیم منقضی یا لغو شده؛ به مدیر صفحه خبر دهید.' : 'به ریپوی داده دسترسی ندارید؛ از مدیر صفحه بخواهید شما را دعوت کند.') : e.status === 401 ? (sess.kind === 'team' ? 'دسترسی تیم منقضی شده؛ به مدیر صفحه خبر دهید.' : 'توکن نامعتبر یا منقضی است.') : 'اتصال به گیت‌هاب برقرار نشد: ' + e.message;
+        /* explain the usual reasons a personal token is refused */
+        const fg = /^github_pat_/.test(sess.token || '');
+        if (sess.kind === 'team') message = e.status === 404 || e.status === 401 ? 'دسترسی تیم منقضی یا لغو شده؛ به مدیر صفحه خبر دهید.' : 'اتصال به گیت‌هاب برقرار نشد: ' + e.message;
+        else if (e.status === 401) message = 'توکن نامعتبر یا منقضی است. یک توکن تازه بسازید.';
+        else if (e.status === 404 && fg) message = `این توکن از نوع Fine-grained است و به ریپوی شخص دیگری دسترسی نمی‌دهد. از لینک «ساخت توکن» بالا یک توکن classic با تیک repo بسازید. (یا از مدیر صفحه رمز تیم بگیرید و بدون توکن وارد شوید.)`;
+        else if (e.status === 404) message = `گیت‌هاب ریپوی ${CFG.owner}/${CFG.repo} را برای این حساب پیدا نکرد. یکی از این‌هاست: ۱) مدیر صفحه شما را به ریپو دعوت نکرده، ۲) دعوت را هنوز در ایمیل یا github.com/notifications قبول نکرده‌اید، ۳) هنگام ساخت توکن تیک repo زده نشده.`;
+        else message = 'اتصال به گیت‌هاب برقرار نشد: ' + e.message;
         mode = sess.kind === 'token' ? 'token' : null; sess = null; token = null; lsSet(SESSION_KEY, null); lsSet(TOKEN_KEY, null); if (el) el.remove();
       }
     }
