@@ -163,12 +163,27 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
 .rb .tx{min-width:0;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 /* long bars: keep the label and title in view while scrolling sideways */
 /* text area of a short bar: joined to the bar (no gap, same height), pale tint of the team colour, outlined in it */
-.rbl{z-index:2;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:3px 8px;margin:4px 0;font-size:12px;font-weight:700;line-height:1.35;color:var(--ink);background:color-mix(in srgb,var(--tc) 26%,var(--surface));border:1.5px solid var(--tc);min-width:0;position:relative}
-.rbl.after{margin-inline-end:3px;border-inline-start:none;border-start-end-radius:9px;border-end-end-radius:9px}
-.rbl.before{margin-inline-start:3px;border-inline-end:none;border-start-start-radius:9px;border-end-start-radius:9px}
+.rbl{z-index:3;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 9px;margin:5px 0;font-size:12px;font-weight:700;line-height:1.35;color:var(--ink);background:color-mix(in srgb,var(--tc) 12%,var(--surface));border:1.5px solid color-mix(in srgb,var(--tc) 75%,transparent);border-radius:12px;box-shadow:0 2px 6px rgb(0 0 0/.08);min-width:0;position:relative}
+/* callout: the bubble sits beside its bar with a small arrow pointing at it (before = earlier dates = right side in RTL) */
+.rbl::after{content:"";position:absolute;top:50%;margin-top:-7px;border:7px solid transparent}
+.rbl.before{margin-inline-end:8px}.rbl.before::after{left:-15px;border-right-color:var(--tc)}
+.rbl.after{margin-inline-start:8px}.rbl.after::after{right:-15px;border-left-color:var(--tc)}
+.rbl.drag{cursor:grab;touch-action:none;user-select:none}
+.rb.pair,.rbl.pair{outline:2px solid var(--accent)!important;outline-offset:1px;z-index:5}
+/* done work stays in its team lane: green dotted outline, pale fill, not draggable */
+.rb.donei{background:color-mix(in srgb,var(--good) 9%,var(--surface))!important;color:var(--ink)!important;border:2px dashed var(--good);box-shadow:none!important;outline:none}
+.rb.donei .tx{opacity:.8}
+.rbl.donei{--tc:var(--good)!important;border:2px dashed var(--good);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
+.lg-bar.donei{background:transparent!important;border:2px dashed var(--good)}
+/* does not fit (concurrent-work limit or fall hours): red dotted outline and a suggestion chip */
+.rb.hintx{outline:2px dotted var(--bad);outline-offset:1px}
+.sug.cap{border-style:dashed;background:transparent}
+.sug{flex:none;font:inherit;font-size:10.5px;font-weight:800;line-height:1.5;border-radius:4px;padding:0 5px;border:1px solid var(--bad);background:var(--surface);color:var(--bad);cursor:default}
+button.sug{cursor:pointer}button.sug:hover{background:var(--bad);color:#fff}
+.tdel{font:inherit;font-size:11px;font-weight:700;padding:0 6px;margin-inline-start:4px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--bad);cursor:pointer}
+.rtog{display:inline-block;font:inherit;font-size:11.5px;font-weight:700;margin-top:4px;padding:1px 8px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}.rtog.over{border-color:var(--bad);color:var(--bad)}
+td.sup{color:var(--muted)}
 .rbl.dep4{border-color:var(--dep4);border-width:3px}.rbl.dep3{border-color:var(--dep3);border-width:2px}.rbl.svc-warn{border-color:var(--svc-warn);border-width:3px}.rbl.svc-ok{border-color:var(--svc-ok);border-style:dashed;border-width:2px}
-.rb.hl-after{margin-inline-end:0;border-start-end-radius:0;border-end-end-radius:0}
-.rb.hl-before{margin-inline-start:0;border-start-start-radius:0;border-end-start-radius:0}
 .rbl .tx{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:break-word}
 .rbl .rbtop{display:flex;flex-wrap:wrap;gap:3px}
 .rbl .dp,.rbl .dl{font-size:10px;font-weight:800;border-radius:4px;padding:0 3px;color:#fff;line-height:1.5}
@@ -303,6 +318,7 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
 .rb.src-jira{border-bottom:3px solid rgb(0 0 0/.35)}
 .lg-bar.jira{border-bottom:3px solid rgb(0 0 0/.35)}
 .rb.drag{cursor:grab;touch-action:none;user-select:none}
+.rbl.dragging{z-index:6;opacity:.92}
 .rb.dragging{cursor:grabbing;z-index:6;opacity:.92;box-shadow:0 6px 18px rgb(0 0 0/.25)}
 .rb .tip{position:absolute;inset-inline-start:6px;top:-2px;font-size:10px;background:var(--ink);color:var(--bg);border-radius:4px;padding:0 5px}
 .pill.dep3{background:var(--dep3-soft);color:var(--dep3)}
@@ -751,7 +767,7 @@ const DEC={commit:'تعهد',stretch:'استرچ',later:'بعداً',drop:'حذ�
 const STATUS={'Backlog':'بک‌لاگ','Ready':'آماده','In Progress':'در جریان','Blocked':'مسدود','New':'جدید'};
 const REASONS=['ادامه طبق برنامه','اولویت تغییر کرد','وابستگی / مسدود','بازتعریف دامنه','کمبود ظرفیت تیم'];
 const MONTHS=['مهر','آبان','آذر','دی','بهمن','اسفند','فروردین'];
-const FIELD={sides:'سمت‌های کار',roles:'نفرات تخصص‌ها',capMode:'روش ظرفیت',rh:'نفر-ساعت تخصص‌ها',doneAt:'تاریخ انجام',hrs:'نفر-ساعت',agreedH:'نفر-ساعت توافقی تیم',decBy:'منبع تصمیم (قاعده خودکار)',svc:'وضعیت سرویس',svcDate:'تاریخ سرویس',svcNote:'یادداشت سرویس',snapshot:'اسنپ‌شات',tStart:'Target start',tEnd:'Target end',wipe:'پاک کردن',ppl:'نفرات اپیک',started:'استارت',tnames:'نام تیم',teamNote:'ملاحظات تیم',color:'رنگ تیم',decision:'تصمیم',rank:'رتبه',effort:'Effort',impact:'Impact',strategic:'Strategic',startW:'هفته شروع',durW:'مدت',reason:'دلیل',note:'یادداشت',done:'انجام شد',summary:'عنوان',created:'ایجاد',deleted:'حذف',cap:'جریان موازی',risk:'ریسک وابستگی',complexity:'پیچیدگی فنی',people:'تعداد نفرات',focus:'درصد تمرکز',pts:'مدل امتیازدهی',thu:'پنجشنبه‌ها',holidays:'تعطیلی اضافه',squad:'نفرات هر جریان',tnote:'توضیح ظرفیت',status:'وضعیت Jira',assignee:'مسئول',okrCycle:'OKR Cycle',jiraScore:'امتیاز Jira',jiraPriority:'Priority',inJira:'در فایل Jira',import:'ایمپورت'};
+const FIELD={teamdel:'حذف تیم از جدول ظرفیت',teamback:'برگرداندن تیم به جدول ظرفیت',sides:'سمت‌های کار',roles:'نفرات تخصص‌ها',capMode:'روش ظرفیت',rh:'نفر-ساعت تخصص‌ها',doneAt:'تاریخ انجام',hrs:'نفر-ساعت',agreedH:'نفر-ساعت توافقی تیم',decBy:'منبع تصمیم (قاعده خودکار)',svc:'وضعیت سرویس',svcDate:'تاریخ سرویس',svcNote:'یادداشت سرویس',snapshot:'اسنپ‌شات',tStart:'Target start',tEnd:'Target end',wipe:'پاک کردن',ppl:'نفرات اپیک',started:'استارت',tnames:'نام تیم',teamNote:'ملاحظات تیم',color:'رنگ تیم',decision:'تصمیم',rank:'رتبه',effort:'Effort',impact:'Impact',strategic:'Strategic',startW:'هفته شروع',durW:'مدت',reason:'دلیل',note:'یادداشت',done:'انجام شد',summary:'عنوان',created:'ایجاد',deleted:'حذف',cap:'جریان موازی',risk:'ریسک وابستگی',complexity:'پیچیدگی فنی',people:'تعداد نفرات',focus:'درصد تمرکز',pts:'مدل امتیازدهی',thu:'پنجشنبه‌ها',holidays:'تعطیلی اضافه',squad:'نفرات هر جریان',tnote:'توضیح ظرفیت',status:'وضعیت Jira',assignee:'مسئول',okrCycle:'OKR Cycle',jiraScore:'امتیاز Jira',jiraPriority:'Priority',inJira:'در فایل Jira',import:'ایمپورت'};
 
 /* team filter: empty = all teams; several teams can be picked together */
 const inP=p=>!S.projs.size||S.projs.has(p);
@@ -773,7 +789,8 @@ const teamColor=p=>{if(S.color[p])return S.color[p];const i=ORDER.indexOf(p);ret
 const PRESETS=['#A9CCF2','#7FB3E6','#4A86C5','#A8DDBA','#7CC79A','#3E9B66','#93D5D0','#5FBDB8','#CBBDF2','#A996E3','#D6E59A','#F0B9C8','#E59AB0','#E7D7A1','#C9D1D9','#8796A5'];
 function inkFor(hex){const m=/^#?([0-9a-f]{6})$/i.exec(hex||'');if(!m)return '';const n=parseInt(m[1],16);const c=[n>>16&255,n>>8&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4});const L=.2126*c[0]+.7152*c[1]+.0722*c[2];return L>.35?'#14212B':'#FFFFFF'}
 const barInk=p=>S.color[p]?`color:${inkFor(S.color[p])};`:'';
-async function saveSettings(){await enqueue('settings',()=>S.db.doc('settings/teams').set({cap:{...S.cap},color:{...S.color},people:{...S.people},focus:{...S.focus},tnote:{...S.tnote},tnames:{...S.tnames},agreedH:{...S.agreedH},roles:JSON.parse(JSON.stringify(S.roles)),capMode:{...S.capMode},thu:S.thu,holidays:[...S.holidays],squad:S.squad}))}
+S.hidden=[];S.rolesOpen=new Set();
+async function saveSettings(){await enqueue('settings',()=>S.db.doc('settings/teams').set({hidden:[...S.hidden],cap:{...S.cap},color:{...S.color},people:{...S.people},focus:{...S.focus},tnote:{...S.tnote},tnames:{...S.tnames},agreedH:{...S.agreedH},roles:JSON.parse(JSON.stringify(S.roles)),capMode:{...S.capMode},thu:S.thu,holidays:[...S.holidays],squad:S.squad}))}
 async function setTeam(field,p,v,label){const store=S[field];const old=store[p]??null;if(old===v)return;if(v==null||v==='')delete store[p];else store[p]=v;render();
   try{await saveSettings();await log({key:p,summary:pname(p),project:p},[{f:field,from:old,to:v??null}])}catch(e){}}
 async function setGlobal(field,v){const old=S[field];if(JSON.stringify(old)===JSON.stringify(v))return;S[field]=v;render();
@@ -913,6 +930,17 @@ async function delEpic(key){
   const e=S.epics.get(key);S.epics.delete(key);S.confirmDel=null;render();
   try{await S.db.doc('epics/'+key).delete();await log(e,[{f:'deleted',from:e.summary,to:null}]);toast('حذف شد')}catch(err){toast('حذف انجام نشد')}
 }
+/* remove a team from the capacity tables. A team with epics is only hidden there (its epics and roadmap lane stay);
+   its people, focus, agreed hours, specialties and note are cleared. Logged like every other change. */
+async function delTeam(p){
+  if(!S.canWrite)return;const n=[...S.epics.values()].filter(e=>e.project===p).length;
+  if(!confirm(n?`تیم «${pname(p)}» ${fa(n)} اپیک دارد. از جدول ظرفیت حذف می‌شود و نفرات و تنظیمات ظرفیتش پاک می‌شود؛ اپیک‌ها و رودمپ دست نمی‌خورند. ادامه می‌دهید؟`:`تیم «${pname(p)}» و تنظیمات ظرفیتش حذف شود؟`))return;
+  const was=[S.people[p]!=null?fa(S.people[p])+' نفر':'',S.agreedH[p]!=null?fa(S.agreedH[p])+' نفر-ساعت توافقی':'',rolesSum(p)?fa(rolesSum(p))+' نفر در تخصص‌ها':''].filter(Boolean).join('، ')||pname(p);
+  for(const o of [S.people,S.focus,S.tnote,S.agreedH,S.roles,S.capMode])delete o[p];
+  if(n){if(!S.hidden.includes(p))S.hidden.push(p)}else delete S.tnames[p];
+  S.rolesOpen.delete(p);render();
+  try{await saveSettings();await log({key:p,summary:pname(p),project:p},[{f:'teamdel',from:was,to:null}]);toast('تیم از جدول ظرفیت حذف شد')}catch(e){}
+}
 async function setCap(p,v){
   v=v===''||v==null?null:Math.max(1,Math.min(40,+v));const old=S.cap[p]??null;if(old===v)return;if(v==null)delete S.cap[p];else S.cap[p]=v;render();
   try{await saveSettings();await log({key:p,summary:pname(p),project:p},[{f:'cap',from:old,to:v}])}catch(e){}
@@ -944,6 +972,14 @@ function schedule(p){
   const order=new Map(items.map((e,i)=>[e.key,i]));
   out.sort((a,b)=>a.sd-b.sd||order.get(a.e.key)-order.get(b.e.key));
   packRows(out,order);
+  /* hints: work that does not fit. Concurrent work: walking in priority order, an epic whose weeks are already at the team's
+     limit gets the first later week where it fits. Hours: once the committed hours pass the team's fall capacity, the rest is flagged. */
+  {const c2=new Array(H).fill(0);const byPrio=[...out].sort((a,b)=>order.get(a.e.key)-order.get(b.e.key));
+    for(const it of byPrio){const w0=Math.max(cw,wk(it.sd)),w1=Math.min(H,Math.ceil(it.ed/7));let bad=false;for(let w=w0;w<w1;w++)if(c2[w]>=lim){bad=true;break}
+      if(bad&&it.src!=='summer'&&it.src!=='auto'){const len=Math.max(1,Math.ceil((it.ed-it.sd)/7));const ok=s=>{for(let w=s;w<s+len&&w<H;w++)if(c2[w]>=lim)return false;return true};let s=Math.max(cw,it.s);while(s<NWEEKS&&!ok(s))s++;
+        const busy=[];for(let w=w0;w<w1;w++)if(c2[w]>=lim)busy.push(w);it.hint={why:'wip',w:s<NWEEKS?s:null,busy:[busy[0],busy[busy.length-1]]}}
+      for(let w=w0;w<w1;w++)c2[w]++}
+    const L=loadOf(p);if(L.known){let cum=0;for(const it of byPrio){if(dec(it.e)!=='commit'||isDone(it.e))continue;cum+=hrsOf(it.e);if(cum>L.capH&&it.sd<FALL_END&&it.src!=='summer'&&!it.hint)it.hint={why:'cap',over:Math.round(cum-L.capH)}}}}
   const from=cw,horizon=cnt.slice(from,NWEEKS);const peak=Math.max(0,...horizon);
   return {items:out,rows:Math.max(2,out.rows),peak,lim,overWeeks:horizon.filter(c=>c>lim).length};
 }
@@ -951,7 +987,7 @@ function packRows(out,order){
   /* bars shorter than 3 weeks get their text beside the bar (on its own free space in the row) so it stays readable */
   const NARROW=21,LBL=30;
   for(const it of out){const a=Math.max(0,it.sd),b=Math.min(it.ed,TOTAL_DAYS);it.lab=null;
-    if(b-a<NARROW&&b>0&&a<TOTAL_DAYS){if(b+LBL<=TOTAL_DAYS)it.lab=[b,b+LBL];else if(a-LBL>=0)it.lab=[a-LBL,a]}
+    if(b-a<NARROW&&b>0&&a<TOTAL_DAYS){if(a-LBL>=0)it.lab=[a-LBL,a];else if(b+LBL<=TOTAL_DAYS)it.lab=[b,b+LBL]}
     it.vs=it.lab?Math.min(it.sd,it.lab[0]):it.sd;it.ve=it.lab?Math.max(it.ed,it.lab[1]):it.ed}
   out.sort((a,b)=>a.vs-b.vs||order.get(a.e.key)-order.get(b.e.key));
   const ends=[];for(const it of out){let r=ends.findIndex(x=>x<=it.vs);if(r<0){ends.push(-1e9);r=ends.length-1}ends[r]=it.ve;it.r=r}
@@ -971,6 +1007,19 @@ function scheduleDone(p){
   packRows(out,order);
   return {items:out,rows:Math.max(2,out.rows),peak:0,lim:0,overWeeks:0,undated:items.length-out.length};
 }
+function scheduleLane(p){
+  const a=schedule(p);if(S.showDoneBoard===false)return a;
+  const d=scheduleDone(p);if(!d.items.length)return {...a,nDone:0};
+  const out=[...a.items,...d.items];packRows(out,new Map(out.map((it,i)=>[it.e.key,i])));
+  return {...a,items:out,rows:Math.max(2,out.rows),nDone:d.items.length,undated:d.undated};
+}
+const hasDone=p=>[...S.epics.values()].some(e=>e.project===p&&isDone(e));
+function sugHtml(it){const h=it.hint;if(!h)return '';
+  if(h.why==='cap')return `<span class="sug cap" title="با این اپیک، تعهدهای تیم ${fa(h.over)} نفر-ساعت از ظرفیت پاییز بیشتر می‌شود. پیشنهاد: استرچ یا بعداً، یا نفر-ساعت توافقی تیم را بالا ببرید.">خارج از ظرفیت پاییز</span>`;
+  const why=`در ${h.busy[0]===h.busy[1]?'هفته '+fa(h.busy[0]+1):'هفته‌های '+fa(h.busy[0]+1)+' تا '+fa(h.busy[1]+1)} تیم به سقف ${fa(wipLimit(it.e.project))} کار هم‌زمان رسیده است`;
+  if(h.w==null)return `<span class="sug" title="${why}؛ تا پایان فروردین جای خالی پیدا نشد.">بیش از سقف کار هم‌زمان</span>`;
+  const txt=`پیشنهاد: هفته ${fa(h.w+1)}`;const tip=`${why}. اگر از ${wk2fa(h.w)} شروع شود جا می‌شود.${S.canWrite?' برای جابه‌جایی کلیک کنید.':''}`;
+  return S.canWrite?`<button type="button" class="sug" data-act="sug" data-k="${esc(it.e.key)}" data-w="${h.w}" title="${tip}">${txt}</button>`:`<span class="sug" title="${tip}">${txt}</span>`}
 const wk2fa=w=>`هفته ${fa(+w+1)} · ${jal(7*(+w))}`;
 const fmtDay=d=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{day:'numeric',month:'long'}).format(new Date(MEHR1+d*864e5));
 function loadOf(p){
@@ -979,13 +1028,13 @@ function loadOf(p){
   const pl=planned(p);
   const com=pl.filter(e=>dec(e)==='commit'),str=pl.filter(e=>dec(e)==='stretch');
   const wH=com.reduce((a,e)=>a+hrsOf(e),0),stH=str.reduce((a,e)=>a+hrsOf(e),0);
-  const calcH=Math.round(people*W.rem*HPD*focus),winH=Math.round(people*W.winRem*HPD*focus);
+  const calcH=Math.round(people*W.rem*HPD*focus),supH=Math.round(people*W.rem*HPD*(1-focus)),winH=Math.round(people*W.winRem*HPD*focus);
   const agreed=S.agreedH[p]!=null&&S.agreedH[p]!==''?+S.agreedH[p]:null;const capH=agreed??calcH;
   const setN=com.filter(hasH).length;
   /* per specialty: capacity from that role's people; load from the hours entered per role on each committed epic */
   const roles=byRoles(p)?ROLES.filter(([r])=>+rolesOf(p)[r]>0||com.some(e=>+(e.rh||{})[r]>0)).map(([r,n])=>{const cnt=+rolesOf(p)[r]||0;const cap=Math.round(cnt*W.rem*HPD*focus);const load=com.reduce((a,e)=>a+(+(e.rh||{})[r]||0),0);return {r,n,cnt,cap,load,left:cap-load}}):null;
   const unassigned=byRoles(p)?com.filter(e=>!rhSum(e)).reduce((a,e)=>a+hrsOf(e),0):0;
-  return {roles,unassigned,byRoles:byRoles(p),wH,stH,calcH,capH,agreed,winH,setN,nCom:com.length,w:r1(wH/HPW),st:r1(stH/HPW),cap:r1(capH/HPW),winCap:r1(winH/HPW),effW,people,known:known||agreed!=null,focus}}
+  return {roles,unassigned,byRoles:byRoles(p),wH,stH,calcH,supH,capH,agreed,winH,setN,nCom:com.length,w:r1(wH/HPW),st:r1(stH/HPW),cap:r1(capH/HPW),winCap:r1(winH/HPW),effW,people,known:known||agreed!=null,focus}}
 
 /* ---------- render ---------- */
 let pending=false;
@@ -1129,13 +1178,13 @@ function renderPrio(ps){
 const DC=d=>d+2; /* grid column of day d (column 1 = team label) */
 function renderRoadmap(ps){
   /* one board, two sections: the plan, then the work already done (positioned on its real dates) */
-  const sections=[{title:'در جریان و برنامه‌ریزی‌شده',has:p=>planned(p).length>0,sched:schedule}];/* side filter hides other bars below */
-  if(S.showDoneBoard!==false)sections.push({title:'انجام‌شده',done:true,has:p=>[...S.epics.values()].some(e=>e.project===p&&isDone(e)),sched:scheduleDone});
+  /* done work stays in its own team lane, drawn with a green dotted outline */
+  const sections=[{title:'',has:p=>planned(p).length>0||(S.showDoneBoard!==false&&hasDone(p)),sched:scheduleLane}];
   const open=renderBoard(ps,{sections,sid:'scroller',bid:'board',gid:'rmgrid',title:'رودمپ پاییز و زمستان ۱۴۰۵',sub:'پاییز: مهر تا دی · زمستان: بهمن تا فروردین ۱۴۰۶ — اپیک‌های تعهدشده تیم‌ها و کارهای انجام‌شده',empty:'هیچ اپیکی با تصمیم «تعهد» یا «استرچ» نیست.'});
   const done='';
   return `<div class="rm-ctl">
       <label class="check"><input type="checkbox" id="withStretch" ${S.withStretch?'checked':''}> نمایش استرچ‌ها</label>
-      <label class="check"><input type="checkbox" id="showDoneBoard" ${S.showDoneBoard!==false?'checked':''}> نمایش کارهای انجام‌شده در رودمپ</label>
+      <label class="check"><input type="checkbox" id="showDoneBoard" ${S.showDoneBoard!==false?'checked':''}> نمایش کارهای انجام‌شده (نقطه‌چین سبز)</label>
       <span class="sub">اپیک‌هایی که Target start و Target end دارند دقیقاً روی همان تاریخ‌های Jira می‌نشینند (نوار با خط زیرین). اپیک‌های In Progress که Target end آن‌ها گذشته، از تابستان کشیده شده‌اند و تا ۳۰ آذر نشان داده می‌شوند. بقیه به ترتیب اولویت از هفته جاری چیده می‌شوند تا تعداد کار هم‌زمان هر تیم از سقفش بیشتر نشود؛ طولشان از Effort است (XS=۱، S=۲، M=۴، L=۶، XL=۸، XXL=۱۲ هفته). ${S.canWrite?'هر نوار را می‌توانید بکشید؛ برای برگشت، در «جزئیات» شروع را «خودکار» کنید.':''}</span>
     </div>`+open+done;
 }
@@ -1162,19 +1211,19 @@ function renderBoard(ps,o){
   for(const {p,sch,row:r,done:isD} of lanes){
     const L=loadOf(p);const over=sch.items.filter(it=>it.sd>=TOTAL_DAYS).length;
     if(isD)cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} کار انجام‌شده</small>${sch.undated?`<small>${fa(sch.undated)} بدون تاریخ (نمایش داده نشد)</small>`:''}</div>`;
-    else cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} اپیک · ${L.known?fa(L.people)+' نفر':'نفرات وارد نشده'}</small><small style="${L.wH>L.capH?'color:var(--bad);font-weight:700':''}">${fa(Math.round(L.wH))}/${fa(L.capH)} نفر-ساعت پاییز</small>${L.known&&L.capH>L.wH?`<small style="color:var(--good);font-weight:700">ظرفیت اضافه ${fa(Math.round(L.capH-L.wH))} نفر-ساعت</small>`:L.wH>L.capH?`<small style="color:var(--bad);font-weight:700">اور ${fa(Math.round(L.wH-L.capH))} نفر-ساعت</small>`:''}<small style="${sch.peak>sch.lim?'color:var(--bad);font-weight:700':''}">کار هم‌زمان: حداکثر ${fa(sch.peak)} / سقف ${fa(sch.lim)}</small>${over?`<small style="color:var(--bad)">${fa(over)} اپیک بعد از فروردین</small>`:''}</div>`;
+    else cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} اپیک · ${L.known?fa(L.people)+' نفر':'نفرات وارد نشده'}</small><small style="${L.wH>L.capH?'color:var(--bad);font-weight:700':''}">${fa(Math.round(L.wH))}/${fa(L.capH)} نفر-ساعت پاییز</small>${L.known&&L.capH>L.wH?`<small style="color:var(--good);font-weight:700">ظرفیت اضافه ${fa(Math.round(L.capH-L.wH))} نفر-ساعت</small>`:L.wH>L.capH?`<small style="color:var(--bad);font-weight:700">اور ${fa(Math.round(L.wH-L.capH))} نفر-ساعت</small>`:''}<small style="${sch.peak>sch.lim?'color:var(--bad);font-weight:700':''}">کار هم‌زمان: حداکثر ${fa(sch.peak)} / سقف ${fa(sch.lim)}</small>${sch.items.some(it=>it.hint)?`<small style="color:var(--bad);font-weight:700">${fa(sch.items.filter(it=>it.hint).length)} کار جا نمی‌شود (پیشنهاد روی نوار)</small>`:''}${sch.nDone?`<small style="color:var(--good);font-weight:700">${fa(sch.nDone)} کار انجام‌شده</small>`:''}${over?`<small style="color:var(--bad)">${fa(over)} اپیک بعد از فروردین</small>`:''}</div>`;
     cells+=`<div class="lane-bg" style="grid-column:2/${END};grid-row:${r}/${r+sch.rows}"></div>`;
     for(const it of sch.items){
       const e=it.e;const ed=it.ed;if(it.sd>=TOTAL_DAYS||ed<=0)continue;const sd=Math.max(0,it.sd);const pre=it.sd<0;
-      const spill=ed>TOTAL_DAYS;const dc=depClass(e);const drag=S.canWrite&&!isD?'drag':'';
-      const tip=`${esc(e.summary)} — ${e.source==='manual'?'جدید':e.key} · ${fmtDay(it.sd)} تا ${fmtDay(ed-1)}${it.src==='jira'?' (تاریخ Jira)':it.src==='drag'?' (جابه‌جاشده)':it.src==='summer'?' (از تابستان کشیده شده؛ باید تا ۳۰ آذر تمام شود)':' (چینش خودکار)'} · ${fa(workW(e))} هفته کار${eppl(e)?' × '+fa(eppl(e))+' نفر':''}${svcOf(e)?' · '+esc(svcTxt(e)):''}${carryOf(e)?' · از فصل قبل':''}${e.started?' · استارت خورده':''}${S.canWrite?' · برای جابه‌جایی بکشید':''}`;
-      cells+=`<div class="rb ${S.side&&(S.side==='none'?Object.keys(sidesOf(e).map).length:!sidesOf(e).map[S.side])?'dim':''} ${it.lab?(it.lab[0]>=Math.min(it.ed,TOTAL_DAYS)?'hl-after':'hl-before'):''} ${e.decision==='stretch'?'stretch':''} ${spill?'spill':''} ${dc} ${drag} src-${it.src}" data-k="${esc(e.key)}" data-s="${it.s}" style="grid-column:${DC(sd)}/${DC(Math.min(ed,TOTAL_DAYS))};grid-row:${r+it.r};background:${teamColor(p)};${e.decision==='stretch'?'':barInk(p)}" title="${tip}">${(()=>{const top=(mainSide(e)?`<span class="side main sm" style="--sc:${SIDECOL[mainSide(e)]}">${RNAME[mainSide(e)]}</span>`:'')+(pre?'<span class="go" title="قبل از مهر شروع شده">▶▶</span>':'')+(e.done?'<span class="ck">✓</span>':'')+(e.started&&!e.done?'<span class="go">▶</span>':'')+(dc==='dep4'?`<span class="dp">بدون سرویس اجرا نمی‌شود</span>`:dc==='dep3'?`<span class="dp">وابسته به سرویس</span>`:dc==='svc-ok'?`<span class="dp">سرویس تحویل شد</span>`:dc==='svc-warn'?`<span class="dp">${WARN}${svcOf(e)==='nodoc'?'سرویس بی‌داکیومنت':'خطای فراخوانی سرویس'}</span>`:'')+(it.src==='summer'?'<span class="dl">تا ۳۰ آذر</span>':'')+(carryOf(e)?'<span class="cy">↻</span>':'');const body=(top?`<div class="rbtop">${top}</div>`:'')+`<span class="tx">${esc(e.summary)}</span>`;if(it.lab){it._lbl=body;return (pre?'<span class="go">▶▶</span>':'')+(e.done?'<span class="ck">✓</span>':'')+(e.started&&!e.done?'<span class="go">▶</span>':'')}return body})()}</div>`;
-      if(it.lab)cells+=`<div class="rbl ${S.side&&(S.side==='none'?Object.keys(sidesOf(e).map).length:!sidesOf(e).map[S.side])?'dim':''} ${it.lab[0]>=Math.min(it.ed,TOTAL_DAYS)?'after':'before'} ${dc}" style="grid-column:${DC(it.lab[0])}/${DC(it.lab[1])};grid-row:${r+it.r};--tc:${teamColor(p)}" title="${tip}">${it._lbl}</div>`;
+      const spill=ed>TOTAL_DAYS;const dn=isD||it.src==='done';const dc=dn?'':depClass(e);const drag=S.canWrite&&!dn?'drag':'';
+      const tip=`${esc(e.summary)} — ${e.source==='manual'?'جدید':e.key} · ${fmtDay(it.sd)} تا ${fmtDay(ed-1)}${it.src==='done'?' (انجام شد)':it.src==='jira'?' (تاریخ Jira)':it.src==='drag'?' (جابه‌جاشده)':it.src==='summer'?' (از تابستان کشیده شده؛ باید تا ۳۰ آذر تمام شود)':' (چینش خودکار)'} · ${fa(workW(e))} هفته کار${eppl(e)?' × '+fa(eppl(e))+' نفر':''}${svcOf(e)?' · '+esc(svcTxt(e)):''}${carryOf(e)?' · از فصل قبل':''}${e.started?' · استارت خورده':''}${S.canWrite?' · برای جابه‌جایی بکشید':''}`;
+      cells+=`<div class="rb ${S.side&&(S.side==='none'?Object.keys(sidesOf(e).map).length:!sidesOf(e).map[S.side])?'dim':''} ${dn?'donei':''} ${it.hint?.why==='wip'?'hintx':''} ${e.decision==='stretch'&&!dn?'stretch':''} ${spill?'spill':''} ${dc} ${drag} src-${it.src}" data-k="${esc(e.key)}" data-s="${it.s}" style="grid-column:${DC(sd)}/${DC(Math.min(ed,TOTAL_DAYS))};grid-row:${r+it.r};background:${teamColor(p)};${e.decision==='stretch'?'':barInk(p)}" title="${tip}">${(()=>{const top=(mainSide(e)?`<span class="side main sm" style="--sc:${SIDECOL[mainSide(e)]}">${RNAME[mainSide(e)]}</span>`:'')+(pre?'<span class="go" title="قبل از مهر شروع شده">▶▶</span>':'')+(e.done?'<span class="ck">✓</span>':'')+(e.started&&!e.done?'<span class="go">▶</span>':'')+(dc==='dep4'?`<span class="dp">بدون سرویس اجرا نمی‌شود</span>`:dc==='dep3'?`<span class="dp">وابسته به سرویس</span>`:dc==='svc-ok'?`<span class="dp">سرویس تحویل شد</span>`:dc==='svc-warn'?`<span class="dp">${WARN}${svcOf(e)==='nodoc'?'سرویس بی‌داکیومنت':'خطای فراخوانی سرویس'}</span>`:'')+(it.src==='summer'?'<span class="dl">تا ۳۰ آذر</span>':'')+(carryOf(e)&&!dn?'<span class="cy">↻</span>':'')+sugHtml(it);const body=(top?`<div class="rbtop">${top}</div>`:'')+`<span class="tx">${esc(e.summary)}</span>`;if(it.lab){it._lbl=body;return (pre?'<span class="go">▶▶</span>':'')+(e.done?'<span class="ck">✓</span>':'')+(e.started&&!e.done?'<span class="go">▶</span>':'')}return body})()}</div>`;
+      if(it.lab)cells+=`<div class="rbl ${S.side&&(S.side==='none'?Object.keys(sidesOf(e).map).length:!sidesOf(e).map[S.side])?'dim':''} ${it.lab[0]>=Math.min(it.ed,TOTAL_DAYS)?'after':'before'} ${dc} ${dn?'donei':''} ${drag}" data-k="${esc(e.key)}" data-s="${it.s}" style="grid-column:${DC(it.lab[0])}/${DC(it.lab[1])};grid-row:${r+it.r};--tc:${dn?'var(--good)':teamColor(p)}" title="${tip}">${it._lbl}</div>`;
     }
   }
   return `    <div class="scroller" id="${o.sid}"><div class="board" id="${o.bid}">
       <div class="board-h"><div><h2>${o.title}</h2><div class="sub">${o.sub}</div></div>
-        <div class="legend"><span><i class="lg-bar"></i>تعهد</span><span><i class="lg-bar dash"></i>استرچ</span><span><i class="lg-bar jira"></i>تاریخ از Jira</span><span><i class="lg-dep d3"></i>وابستگی زیاد</span><span><i class="lg-dep d4"></i><b>بدون سرویس اجرا نمی‌شود</b></span><span><i class="lg-dep ok"></i>سرویس تحویل گرفته شد</span><span><i class="lg-dep warn"></i>سرویس بی‌داکیومنت / خطای فراخوانی</span><span><span class="dl" style="font-size:10.5px;font-weight:800;border-radius:4px;padding:0 4px;background:var(--bad);color:#fff">تا ۳۰ آذر</span>از تابستان کشیده شده</span><span>▶ استارت خورده</span><span>↻ از فصل قبل</span><span><span class="ck" style="width:13px;height:13px;border-radius:3px;background:var(--good);color:#fff;font-size:10px;display:inline-flex;align-items:center;justify-content:center">✓</span>انجام شد</span><span>◀ ادامه بعد از فروردین</span></div></div>
+        <div class="legend"><span><i class="lg-bar"></i>تعهد</span><span><i class="lg-bar dash"></i>استرچ</span><span><i class="lg-bar jira"></i>تاریخ از Jira</span><span><i class="lg-dep d3"></i>وابستگی زیاد</span><span><i class="lg-dep d4"></i><b>بدون سرویس اجرا نمی‌شود</b></span><span><i class="lg-dep ok"></i>سرویس تحویل گرفته شد</span><span><i class="lg-dep warn"></i>سرویس بی‌داکیومنت / خطای فراخوانی</span><span><span class="dl" style="font-size:10.5px;font-weight:800;border-radius:4px;padding:0 4px;background:var(--bad);color:#fff">تا ۳۰ آذر</span>از تابستان کشیده شده</span><span><i class="lg-bar donei"></i>انجام‌شده</span><span><span class="sug">پیشنهاد: هفته …</span>جا نمی‌شود؛ پیشنهاد شروع دیرتر</span><span>▶ استارت خورده</span><span>↻ از فصل قبل</span><span><span class="ck" style="width:13px;height:13px;border-radius:3px;background:var(--good);color:#fff;font-size:10px;display:inline-flex;align-items:center;justify-content:center">✓</span>انجام شد</span><span>◀ ادامه بعد از فروردین</span></div></div>
       <div class="grid" id="${o.gid}" style="grid-template-rows:42px 24px repeat(${Math.max(1,last-3)},minmax(44px,auto))">${cells}</div>
       <div class="rm-foot"><span>اداره کل تحول دیجیتال · شرکت ارزش‌آفرین اطلس</span><span>به‌روزرسانی: ${new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'medium'}).format(new Date())}</span></div>
     </div></div>`;
@@ -1182,52 +1231,59 @@ function renderBoard(ps,o){
 
 /* drag & drop on the roadmap: horizontal, snaps to weeks */
 document.addEventListener('pointerdown',ev=>{
-  const bar=ev.target.closest('.rb.drag');if(!bar||!S.canWrite||ev.button!==0)return;
+  if(ev.target.closest('.sug'))return;
+  const hit=ev.target.closest('.rb.drag,.rbl.drag');if(!hit||!S.canWrite||ev.button!==0)return;
   const grid=$('#rmgrid');if(!grid)return;
+  const els=[...grid.querySelectorAll(`[data-k="${CSS.escape(hit.dataset.k)}"]`)];const bar=els.find(x=>x.classList.contains('rb'))||hit;
   const gr=grid.getBoundingClientRect();const dayW=(gr.width-160)/TOTAL_DAYS;
   const D={bar,key:bar.dataset.k,s0:+bar.dataset.s,x0:ev.clientX,dw:0,dayW,moved:false};
-  S.dragging=D;bar.setPointerCapture(ev.pointerId);
+  S.dragging=D;hit.setPointerCapture(ev.pointerId);
   const move=e=>{const dx=e.clientX-D.x0;if(Math.abs(dx)>3)D.moved=true;if(!D.moved)return;
     D.dw=Math.max(-D.s0,Math.min(NWEEKS-1-D.s0,Math.round(-dx/D.dayW/7)));
-    bar.classList.add('dragging');bar.style.transform=`translateX(${-D.dw*7*D.dayW}px)`;
+    for(const x of els){x.classList.add('dragging');x.style.transform=`translateX(${-D.dw*7*D.dayW}px)`}
     let t=bar.querySelector('.tip');if(!t){t=document.createElement('span');t.className='tip';bar.appendChild(t)}t.textContent=wk2fa(D.s0+D.dw)};
-  const up=()=>{bar.removeEventListener('pointermove',move);bar.removeEventListener('pointerup',up);bar.removeEventListener('pointercancel',up);
+  const up=()=>{hit.removeEventListener('pointermove',move);hit.removeEventListener('pointerup',up);hit.removeEventListener('pointercancel',up);
     S.dragging=null;const ns=D.s0+D.dw;
     if(D.moved&&D.dw!==0){patch(D.key,{startW:ns});toast('شروع به '+wk2fa(ns)+' منتقل شد')}else render();
     if(pending){pending=false;setTimeout(render,0)}};
-  bar.addEventListener('pointermove',move);bar.addEventListener('pointerup',up);bar.addEventListener('pointercancel',up);
+  hit.addEventListener('pointermove',move);hit.addEventListener('pointerup',up);hit.addEventListener('pointercancel',up);
 });
+/* hovering a bar or its text bubble highlights both, so it is clear which text belongs to which bar */
+document.addEventListener('mouseover',ev=>{const el=ev.target.closest('#rmgrid .rb,#rmgrid .rbl');const k=el?.dataset.k||null;if(k===S.hoverK)return;S.hoverK=k;
+  document.querySelectorAll('#rmgrid .pair').forEach(x=>x.classList.remove('pair'));if(k)document.querySelectorAll(`#rmgrid [data-k="${CSS.escape(k)}"]`).forEach(x=>x.classList.add('pair'))});
 
 function renderCap(ps){
   const W=workCalc();const dis=S.canWrite?'':'disabled';
-  const teams=[...new Set([...ps,...Object.keys(S.people)])].sort((a,b)=>{const ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b)}).filter(inP);
+  const teams=[...new Set([...ps,...Object.keys(S.people),...Object.keys(S.tnames)])].sort((a,b)=>{const ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b)}).filter(p=>inP(p)&&!S.hidden.includes(p));
   const hol=[...OFFICIAL_HOL.map(h=>({...h,off:true})),...S.holidays].sort((x,y)=>x.i-y.i);
   const over=(cap,w)=>{const d=w-cap;const pct=cap?Math.round(w/cap*100):0;return {d,pct}};
   const stat=(L)=>{if(!L.known)return '<span class="pill st-Backlog">نفرات وارد نشده</span>';const {d,pct}=over(L.capH,L.wH);return d>0?`<span class="pill st-Blocked">اور ${fa(Math.round(d))} نفر-ساعت (${fa(pct-100)}٪)</span>`:d===0?'<span class="pill carry">دقیقاً پر</span>':`<span class="pill spare" title="می‌شود اپیک دیگری به تعهد این تیم اضافه کرد">ظرفیت اضافه ${fa(Math.round(-d))} نفر-ساعت (${fa(100-pct)}٪ آزاد)</span>${pct>85?' <span class="pill carry">نزدیک سقف</span>':''}`};
-  const rowsH=teams.map(p=>{const L=loadOf(p);const left=L.capH-L.wH;
-    return `<tr><td><span class="dot" style="background:${teamColor(p)}"></span>${esc(pname(p))} <span class="mono" style="color:var(--muted)">${p}</span></td>
+  const rowsH=teams.map(p=>{const L=loadOf(p);const left=L.capH-L.wH;const ro=S.rolesOpen.has(p);const rOver=L.roles&&L.roles.some(x=>x.left<0);
+    return `<tr><td><span class="dot" style="background:${teamColor(p)}"></span>${esc(pname(p))} <span class="mono" style="color:var(--muted)">${p}</span>${S.canWrite?`<button type="button" class="tdel" data-act="delteam" data-p="${p}" title="حذف این تیم از جدول ظرفیت">حذف</button>`:''}
+      <div><button type="button" class="rtog ${rOver?'over':''}" data-act="rolestog" data-p="${p}" aria-expanded="${ro}">${ro?'بستن تخصص‌ها':'نفرات و تخصص‌ها'}${rolesSum(p)?' · '+fa(rolesSum(p))+' نفر':''}${rOver?' · اور':''}</button></div></td>
       <td>${byRoles(p)?`<b>${fa(rolesSum(p))}</b><div class="sub">جمع تخصص‌ها</div>`:`<div class="stepper"><button data-act="pplm" data-p="${p}" ${dis} aria-label="یک نفر کمتر">−</button><input type="number" min="0" max="300" id="cppl-${p}" data-act="people" data-p="${p}" value="${S.people[p]??''}" placeholder="—" ${dis}><button data-act="pplp" data-p="${p}" ${dis} aria-label="یک نفر بیشتر">+</button></div>`}</td>
       <td><input class="cap" type="number" min="10" max="100" step="5" id="foc-${p}" data-act="focus" data-p="${p}" value="${S.focus[p]??80}" ${dis}>٪</td>
       <td class="num">${fa(L.calcH)}</td>
       <td><input class="cap agh" type="number" min="0" step="8" id="agh-${p}" data-act="agreedH" data-p="${p}" value="${S.agreedH[p]??''}" placeholder="توافقی" title="نفر-ساعتی که در جلسه با مدیر تیم توافق می‌شود؛ اگر پر شود ملاک ظرفیت همین است" ${dis}></td>
       <td class="num"><b>${fa(L.capH)}</b></td>
+      <td class="num sup" title="${fa(100-Math.round(L.focus*100))}٪ وقت تیم که به اپیک‌ها نمی‌رسد">${fa(L.supH)}<div class="sub">${fa(100-Math.round(L.focus*100))}٪ وقت</div></td>
       <td class="num">${fa(Math.round(L.wH))}<div class="sub">${fa(L.setN)} از ${fa(L.nCom)} اپیک با نفر-ساعت توافقی</div></td>
       <td class="num">${fa(Math.round(L.stH))}</td>
       <td class="num ${left<0?'over':'ok'}">${left<0?'اور '+fa(Math.round(-left)):left>0?'اضافه '+fa(Math.round(left)):'—'}</td>
       <td>${stat(L)}</td>
       <td><input type="text" class="tnote" id="tn-${p}" data-act="tnote" data-p="${p}" value="${esc(S.tnote[p]||'')}" placeholder="مثلاً: ۲ نفر از آذر به تیم دیگر می‌روند" ${dis}></td></tr>
-      <tr class="rolerow"><td colspan="11"><div class="roles">
+      ${ro?`<tr class="rolerow"><td colspan="12"><div class="roles">
         <label class="rmode">ظرفیت با <select id="cm-${p}" data-act="capmode" data-p="${p}" ${dis}><option value="total" ${byRoles(p)?'':'selected'}>کل نفرات تیم</option><option value="roles" ${S.capMode[p]==='roles'?'selected':''}>نفرات هر تخصص</option></select></label>
         ${ROLES.map(([r,n])=>`<label class="rin">${n}<input type="number" min="0" max="300" id="ro-${p}-${r}" data-act="role" data-p="${p}" data-r="${r}" value="${rolesOf(p)[r]??''}" placeholder="—" ${dis}></label>`).join('')}
         <span class="sub">${rolesSum(p)?`جمع: ${fa(rolesSum(p))} نفر`:'اختیاری'}${S.capMode[p]==='roles'&&!rolesSum(p)?' — نفرات تخصص‌ها را وارد کنید':''}</span></div>
-        ${L.roles?`<div class="rchips">${L.roles.map(x=>`<span class="rchip ${x.left<0?'over':x.cap>0?'ok':''}"><b>${x.n}</b> ${fa(x.cnt)} نفر · بار ${fa(Math.round(x.load))} / ظرفیت ${fa(x.cap)} · ${x.left<0?'اور '+fa(Math.round(-x.left)):'اضافه '+fa(Math.round(x.left))}</span>`).join('')}${L.unassigned?`<span class="rchip warn">${fa(Math.round(L.unassigned))} نفر-ساعت از اپیک‌هایی که تفکیک تخصص ندارند</span>`:''}</div>`:''}</td></tr>`}).join('');
+        ${L.roles?`<div class="rchips">${L.roles.map(x=>`<span class="rchip ${x.left<0?'over':x.cap>0?'ok':''}"><b>${x.n}</b> ${fa(x.cnt)} نفر · بار ${fa(Math.round(x.load))} / ظرفیت ${fa(x.cap)} · ${x.left<0?'اور '+fa(Math.round(-x.left)):'اضافه '+fa(Math.round(x.left))}</span>`).join('')}${L.unassigned?`<span class="rchip warn">${fa(Math.round(L.unassigned))} نفر-ساعت از اپیک‌هایی که تفکیک تخصص ندارند</span>`:''}</div>`:''}</td></tr>`:''}`}).join('');
   const rowsW=teams.map(p=>{const L=loadOf(p);const SC=schedule(p);const left=r1(L.cap-L.w);
     return `<tr><td><span class="dot" style="background:${teamColor(p)}"></span>${esc(pname(p))} <span class="mono" style="color:var(--muted)">${p}</span></td>
       <td class="num">${fa(L.people||'—')}</td><td class="num">${fa(L.effW)}</td><td class="num"><b>${fa(L.cap)}</b></td><td class="num">${fa(L.w)}</td><td class="num">${fa(L.st)}</td>
       <td class="num ${left<0?'over':'ok'}">${left<0?'اور '+fa(r1(-left)):left>0?'اضافه '+fa(left):'—'}</td><td class="num">${fa(L.winCap)}</td>
       <td><input class="cap" type="number" min="1" max="40" id="cap-${p}" data-act="cap" data-p="${p}" value="${S.cap[p]??''}" placeholder="${fa(wipLimit(p))}" title="خالی = ۳ کار هم‌زمان" ${dis}></td>
       <td class="num" style="${SC.peak>SC.lim?'color:var(--bad);font-weight:700':''}">${fa(SC.peak)}${SC.overWeeks?` <span class="sub">(${fa(SC.overWeeks)} هفته بیش از سقف)</span>`:''}</td></tr>`}).join('');
-  const addable=Object.keys(allTeams()).filter(k=>!teams.includes(k));
+  const addable=[...new Set([...Object.keys(allTeams()),...S.hidden])].filter(k=>!teams.includes(k));
   return `<div class="capgrid">
     <section class="card"><h2>تقویم کوارترها</h2><p class="sub">پاییز: ۱ مهر تا ۳۰ دی ۱۴۰۵ · زمستان: ۱ بهمن ۱۴۰۵ تا ۳۱ فروردین ۱۴۰۶ · امروز ${jal(W.t0)}</p>
       <div class="kpis"><div><b>${fa(W.calRem)}</b><span>روز تقویمی تا پایان دی</span></div><div><b>${fa(r1(W.rem/5))}</b><span>هفته کاری باقی‌مانده پاییز</span><small>${fa(W.rem)} روز کاری</small></div><div><b>${fa(r1(W.total/5))}</b><span>کل هفته کاری پاییز</span><small>${fa(W.total)} روز کاری</small></div><div><b>${fa(r1(W.winTotal/5))}</b><span>هفته کاری زمستان</span><small>${fa(W.winTotal)} روز کاری</small></div></div>
@@ -1241,6 +1297,7 @@ function renderCap(ps){
       <li><b>ظرفیت محاسبه‌شده تیم</b> = نفرات × ${fa(W.rem)} روز کاری باقی‌مانده تا پایان دی × ۷ ساعت × درصد تمرکز. اگر «نفر-ساعت توافقی» تیم را در جلسه با مدیر تیم وارد کنید، ملاک همان است.</li>
       <li><b>بار هر اپیک</b> = نفر-ساعتی که کنار اپیک وارد می‌کنید. اگر خالی باشد، از Effort تخمین زده می‌شود (هفته‌های Effort × نفرات تیم × ۳۵ ساعت) و با «(تخمین)» نشان داده می‌شود.</li>
       <li><b>اور</b> = بار تعهدها بیشتر از ظرفیت (قرمز). <b>ظرفیت اضافه</b> = ظرفیتی که بعد از تعهدها خالی می‌ماند (سبز)؛ یعنی می‌شود اپیک دیگری به تعهد آن تیم اضافه کرد.</li>
+      <li><b>پشتیبانی و باگ</b> = بقیه وقت تیم (۱۰۰ منهای درصد تمرکز): نفرات × روزهای کاری باقی‌مانده × ۷ ساعت × (۱ − تمرکز). مثلاً با تمرکز ۸۰٪، ۲۰٪ برای پشتیبانی و رفع باگ کنار گذاشته می‌شود.</li>
       <li><b>درصد تمرکز</b> سهم زمانی است که بعد از جلسات، پشتیبانی و مرخصی واقعاً صرف اپیک‌ها می‌شود (پیش‌فرض ۸۰٪).</li>
       <li>جدول نفر-هفته همان اعداد را تقسیم بر ۳۵ نشان می‌دهد. Effort: XS=۱، S=۲، M=۴، L=۶، XL=۸، XXL=۱۲ هفته کار کل تیم.</li>
       <li>اپیک‌های In Progress که Target end آن‌ها گذشته، <b>از تابستان کشیده شده‌اند</b>: باید تا ۳۰ آذر تمام شوند و بارشان هفته‌های باقی‌مانده تا ۳۰ آذر است.</li>
@@ -1249,7 +1306,7 @@ function renderCap(ps){
       <li>تعطیلات رسمی و جمعه‌ها (و پنجشنبه‌ها طبق تنظیم) از روزهای کاری کم می‌شوند. اپیک‌های «انجام شد» در بار حساب نمی‌شوند.</li></ul>
     </section></div>
     <section class="card"><h2>ظرفیت تیم‌ها — نفر-ساعت</h2><p class="sub">ملاک تصمیم. هر روز ۷ ساعت. ستون «نفر-ساعت توافقی» را در جلسه با مدیر هر تیم پر کنید؛ کنار هر اپیک هم می‌شود نفر-ساعت توافقی وارد کرد.</p>
-      <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>تمرکز</th><th>ظرفیت محاسبه‌شده</th><th>نفر-ساعت توافقی</th><th>ظرفیت ملاک</th><th>تعهد</th><th>استرچ</th><th>ظرفیت اضافه / اور</th><th>وضعیت</th><th>توضیحات</th></tr></thead><tbody>${rowsH}</tbody></table></div>
+      <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>تمرکز</th><th>ظرفیت محاسبه‌شده</th><th>نفر-ساعت توافقی</th><th>ظرفیت ملاک</th><th>پشتیبانی و باگ</th><th>تعهد</th><th>استرچ</th><th>ظرفیت اضافه / اور</th><th>وضعیت</th><th>توضیحات</th></tr></thead><tbody>${rowsH}</tbody></table></div>
     </section>
     <section class="card"><h2>ظرفیت تیم‌ها — نفر-هفته</h2><p class="sub">همان اعداد تقسیم بر ۳۵ ساعت، به‌اضافه کار هم‌زمان.</p>
       <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>هفته مؤثر هر نفر</th><th>ظرفیت پاییز</th><th>تعهد</th><th>استرچ</th><th>ظرفیت اضافه / اور</th><th>ظرفیت زمستان</th><th>سقف کار هم‌زمان</th><th>بیشترین کار هم‌زمان</th></tr></thead><tbody>${rowsW}</tbody></table></div>
@@ -1314,7 +1371,7 @@ async function runWipe(){
     if(opt.teams){await S.db.doc('settings/teams').delete();S.wipe.done++}
     if(opt.score){await S.db.doc('settings/scoring').delete();S.pts=JSON.parse(JSON.stringify(DEF_PTS));S.wipe.done++}
     if(opt.epics)S.epics=new Map();
-    if(opt.teams){S.cap={};S.color={};S.people={};S.focus={};S.tnote={};S.tnames={};S.holidays=[];S.thu='off';S.squad=4}
+    if(opt.teams){S.cap={};S.color={};S.people={};S.focus={};S.tnote={};S.tnames={};S.hidden=[];S.holidays=[];S.thu='off';S.squad=4}
     await log({key:'—',summary:'پاک کردن داده‌های قبلی',project:''},[{f:'wipe',from:null,to:[opt.epics?ids.epics.length+' اپیک':'',opt.log?'تاریخچه':'',opt.teams?'تنظیمات تیم‌ها':'',opt.score?'مدل امتیاز':''].filter(Boolean).join('، ')}]);
     S.wipe=null;render();toast('داده‌های انتخاب‌شده پاک شد');
   }catch(e){console.error(e);S.wipe=null;render();toast('بخشی پاک نشد؛ دوباره امتحان کنید')}
@@ -1345,6 +1402,9 @@ document.addEventListener('click',async ev=>{
   else if(a==='color'){S.colorOpen=S.colorOpen===t.dataset.p?null:t.dataset.p;render()}
   else if(a==='colorx'){S.colorOpen=null;render()}
   else if(a==='pick')setColor(t.dataset.p,t.dataset.c);
+  else if(a==='rolestog'){const p=t.dataset.p;S.rolesOpen.has(p)?S.rolesOpen.delete(p):S.rolesOpen.add(p);render()}
+  else if(a==='delteam')delTeam(t.dataset.p);
+  else if(a==='sug'){const w=+t.dataset.w;patch(k,{startW:w});toast('شروع به '+wk2fa(w)+' منتقل شد')}
   else if(a==='pplm'||a==='pplp'){const p=t.dataset.p;const v=Math.max(0,(+S.people[p]||0)+(a==='pplp'?1:-1));setTeam('people',p,v)}
   else if(a==='holdel'){setGlobal('holidays',S.holidays.filter(h=>h.i!==+t.dataset.i))}
   else if(a==='holadd'){const mm=+$('#hol-m').value,dd=Math.min(+$('#hol-d').value,MLEN[mm]-1);const i=MSTART[mm]+dd;if(S.holidays.some(h=>h.i===i))return;setGlobal('holidays',[...S.holidays,{i,name:($('#hol-n').value.trim()||'تعطیلی')+' — '+jal(i)}].sort((x,y)=>x.i-y.i))}
@@ -1362,7 +1422,7 @@ document.addEventListener('click',async ev=>{
       if(a==='snapview'){S.snapView={id,at:d.at,label:d.label||'',old:d.epics||{},mode:'table',all:false};render()}
       else if(a==='snapdl'){const {epics,settings,log:lg,format,version,exportedAt}=d;await save(`atlas-snapshot-${new Date(d.at).toISOString().slice(0,10)}-${id}.json`,new Blob([JSON.stringify({format,version,exportedAt,label:d.label||'',epics,log:lg||{},settings},null,1)],{type:'application/json'}))}
       else await restoreData(d,'اسنپ‌شات '+(d.label||''))}catch(e){console.error(e);toast('خواندن اسنپ‌شات انجام نشد')}}
-  else if(a==='snapdel'){const id=t.dataset.id;if(!S.isOwner||!confirm('این اسنپ‌شات حذف شود؟'))return;try{await S.db.doc('snapshots/'+id).delete();await S.db.doc('snapmeta/'+id).delete();if(S.snapView?.id===id)S.snapView=null;toast('حذف شد')}catch(e){toast('حذف نشد')}}
+  else if(a==='snapdel'){const id=t.dataset.id;if(!S.isOwner||!confirm('این اسنپ‌شات حذف شود؟'))return;const sm=S.snaps.find(x=>x.id===id);try{await S.db.doc('snapshots/'+id).delete();await S.db.doc('snapmeta/'+id).delete();await log({key:'—',summary:'حذف اسنپ‌شات'+(sm?.label?': '+sm.label:''),project:''},[{f:'snapshot',from:sm?fmtT(sm.at):id,to:null}]);if(S.snapView?.id===id)S.snapView=null;toast('حذف شد')}catch(e){toast('حذف نشد')}}
   else if(a==='wipex'){S.wipe=null;render()}
   else if(a==='wipego')runWipe();
   else if(a==='start')startEpic(k);
@@ -1374,7 +1434,7 @@ document.addEventListener('click',async ev=>{
   else if(a==='delx'){S.confirmDel=null;render()}
   else if(a==='del2')delEpic(k);
 });
-document.addEventListener('change',ev=>{
+document.addEventListener('change',async ev=>{
   const t=ev.target;const a=t.dataset.act,k=t.dataset.k;
   if(t.id==='withStretch'){S.withStretch=t.checked;render();return}
   if(t.id==='showDoneBoard'){S.showDoneBoard=t.checked;render();return}
@@ -1399,7 +1459,7 @@ document.addEventListener('change',ev=>{
   else if(a==='role'){const p=t.dataset.p,r=t.dataset.r;const old={...rolesOf(p)};const nv={...old};if(t.value===''||+t.value<=0)delete nv[r];else nv[r]=Math.min(300,+t.value);if(JSON.stringify(nv)===JSON.stringify(old))return;S.roles[p]=nv;render();saveSettings().then(()=>log({key:p,summary:pname(p),project:p},[{f:'roles',from:old,to:nv}])).catch(()=>{})}
   else if(a==='rh'){const e=S.epics.get(k);if(!e)return;const nv={...(e.rh||{})};if(t.value===''||+t.value<=0)delete nv[t.dataset.r];else nv[t.dataset.r]=+t.value;patch(k,{rh:Object.keys(nv).length?nv:null})}
   else if(a==='thu')setGlobal('thu',t.value);
-  else if(a==='addteam'&&t.value)setTeam('people',t.value,1);
+  else if(a==='addteam'&&t.value){const k2=t.value;if(S.hidden.includes(k2)){S.hidden=S.hidden.filter(x=>x!==k2);render();try{await saveSettings();await log({key:k2,summary:pname(k2),project:k2},[{f:'teamback',from:null,to:pname(k2)}])}catch(e){}}else setTeam('people',k2,1)}
   else if(a==='pt'){const f=t.dataset.f,v=t.dataset.v;S.pts[f]={...S.pts[f],[v]:Math.max(0,+t.value||0)};render();savePts()}
   else if(a==='custom')setColor(t.dataset.p,t.value);
 });
@@ -1435,8 +1495,8 @@ $('#xls').addEventListener('click',async()=>{
   const H=['اولویت','کلید','عنوان','تیم','وضعیت Jira','استارت','وابستگی سرویس','تصمیم','از فصل قبل','وضعیت فصل قبل','دلیل','تأثیر کسب‌وکاری','اولویت استراتژیک','ریسک وابستگی','پیچیدگی فنی','Effort','نفر-ساعت','نفر-ساعت توافقی است؟','امتیاز Jira','OKR Cycle','مسئول','شروع','پایان','هفته کار (Effort)','نفرات','نفر-هفته','انجام شد','یادداشت','فیلدهای خالی','سمت‌های کار','وضعیت سرویس','تاریخ سرویس','یادداشت سرویس'];
   const sched={};for(const p of projects()){for(const it of schedule(p).items)sched[it.e.key]=it}
   const line=(e,rank)=>{const it=sched[e.key];return [rank??'',e.source==='manual'?'جدید':e.key,e.summary,pname(e.project),STATUS[e.status]||e.status,e.started?fmtD(e.started):'',e.risk>=4?'بسیار زیاد — بدون سرویس پیاده‌سازی ممکن نیست':e.risk===3?'زیاد':'',DEC[dec(e)]||'بدون تصمیم',summerCarry(e)?'از تابستان — تا ۳۰ آذر':carryOf(e)?'بله':'',carryOf(e)?carryState(e):'',e.reason||'',e.impact?IMP[e.impact]:'',e.strategic?STR[e.strategic]:'',e.risk?RISK[e.risk]:'',e.complexity?CPX[e.complexity]:'',EFF[e.effort]||'',hrsOf(e),hasH(e)?'بله':'تخمین از Effort',e.jiraScore??'',e.okrCycle||'',e.assignee||'',it?fmtDay(it.sd):'',it?fmtDay(it.ed-1):'',workW(e),eppl(e)??'',pw(e),e.done?'بله':'',e.note||'',gaps(e).join('، '),valTxt('sides',sidesOf(e).map),svcOf(e)?SVC[svcOf(e)]:'',e.svcDate!=null?fmtDay(+e.svcDate):'',e.svcNote||'']};
-  const sum=[['تیم','کلید پروژه','کل اپیک','از فصل قبل','تعهد','استرچ','بعداً','حذف','بدون تصمیم','نفرات','هفته مؤثر هر نفر','ظرفیت پاییز (نفر-هفته)','تعهد (نفر-هفته)','استرچ (نفر-هفته)','ظرفیت اضافه (+) / اور (−) (نفر-هفته)','ظرفیت زمستان (نفر-هفته)','ظرفیت محاسبه‌شده (نفر-ساعت)','نفر-ساعت توافقی','تعهد (نفر-ساعت)','ظرفیت اضافه (+) / اور (−) (نفر-ساعت)','توضیح']];
-  for(const p of projects()){const l=[...S.epics.values()].filter(e=>e.project===p);const L=loadOf(p);sum.push([pname(p),p,l.length,l.filter(carryOf).length,...['commit','stretch','later','drop',''].map(d=>l.filter(e=>(e.decision||'')===d).length),L.people,L.effW,L.cap,L.w,L.st,r1(L.cap-L.w),L.winCap,L.calcH,L.agreed??'',Math.round(L.wH),Math.round(L.capH-L.wH),S.tnote[p]||''])}
+  const sum=[['تیم','کلید پروژه','کل اپیک','از فصل قبل','تعهد','استرچ','بعداً','حذف','بدون تصمیم','نفرات','هفته مؤثر هر نفر','ظرفیت پاییز (نفر-هفته)','تعهد (نفر-هفته)','استرچ (نفر-هفته)','ظرفیت اضافه (+) / اور (−) (نفر-هفته)','ظرفیت زمستان (نفر-هفته)','ظرفیت محاسبه‌شده (نفر-ساعت)','نفر-ساعت توافقی','پشتیبانی و باگ (نفر-ساعت)','تعهد (نفر-ساعت)','ظرفیت اضافه (+) / اور (−) (نفر-ساعت)','توضیح']];
+  for(const p of projects()){const l=[...S.epics.values()].filter(e=>e.project===p);const L=loadOf(p);sum.push([pname(p),p,l.length,l.filter(carryOf).length,...['commit','stretch','later','drop',''].map(d=>l.filter(e=>(e.decision||'')===d).length),L.people,L.effW,L.cap,L.w,L.st,r1(L.cap-L.w),L.winCap,L.calcH,L.agreed??'',L.supH,Math.round(L.wH),Math.round(L.capH-L.wH),S.tnote[p]||''])}
   {const W=workCalc();sum.push([]);sum.push(['هفته کاری باقی‌مانده تا پایان دی',r1(W.rem/5),W.rem+' روز کاری']);sum.push(['هفته کاری زمستان (بهمن تا فروردین)',r1(W.winTotal/5),W.winTotal+' روز کاری']);sum.push(['هفته تقویمی باقی‌مانده',r1(W.weeksRem),W.calRem+' روز']);sum.push(['کل هفته کاری پاییز',r1(W.total/5),W.total+' روز کاری']);sum.push(['فرض‌ها',`هفته کاری شنبه تا چهارشنبه؛ پنجشنبه ${valTxt('thu',S.thu)}؛ Effort برای کل تیم است؛ ظرفیت = نفرات × هفته کاری باقی‌مانده × درصد تمرکز؛ بار = هفته کار × نفرات تیم؛ سقف پیش‌فرض کار هم‌زمان ۳`])}
   const ws0=styleWS(XLSX.utils.aoa_to_sheet(sum));ws0['!cols']=sum[0].map(()=>({wch:16}));XLSX.utils.book_append_sheet(wb,ws0,'خلاصه');
   {const rr=[['تیم','تخصص','نفرات','ظرفیت (نفر-ساعت)','بار تعهد (نفر-ساعت)','ظرفیت اضافه (+) / اور (−)']];for(const p of projects()){const L=loadOf(p);if(!L.roles)continue;for(const x of L.roles)rr.push([pname(p),x.n,x.cnt,x.cap,Math.round(x.load),Math.round(x.left)]);if(L.unassigned)rr.push([pname(p),'بدون تفکیک تخصص','',' ',Math.round(L.unassigned),''])}
@@ -1787,7 +1847,7 @@ render();
   },err=>{console.error(err);toast('اتصال به داده قطع شد')});
   db.collection('snapmeta').orderBy('at','desc').limit(300).onSnapshot(snap=>{S.snaps=snap.docs.map(d=>({id:d.id,...d.data()}));S.snapsLoaded=true;if(S.tab==='snap')softRender();maybeAutoSnap()},()=>{S.snapsLoaded=true});
   db.collection('log').orderBy('at','desc').limit(400).onSnapshot(snap=>{S.log=snap.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==='log')softRender();},()=>{});
-  db.doc('settings/teams').onSnapshot(s=>{const d=s.data()||{};S.cap={...(d.cap||{})};S.color={...(d.color||{})};S.people={...(d.people||{})};S.focus={...(d.focus||{})};S.tnote={...(d.tnote||{})};S.thu=d.thu||'off';S.holidays=[...(d.holidays||[])];S.squad=d.squad||4;S.tnames={...(d.tnames||{})};S.agreedH={...(d.agreedH||{})};S.roles=JSON.parse(JSON.stringify(d.roles||{}));S.capMode={...(d.capMode||{})};softRender()},()=>{});
+  db.doc('settings/teams').onSnapshot(s=>{const d=s.data()||{};S.cap={...(d.cap||{})};S.color={...(d.color||{})};S.people={...(d.people||{})};S.focus={...(d.focus||{})};S.tnote={...(d.tnote||{})};S.thu=d.thu||'off';S.holidays=[...(d.holidays||[])];S.squad=d.squad||4;S.tnames={...(d.tnames||{})};S.agreedH={...(d.agreedH||{})};S.roles=JSON.parse(JSON.stringify(d.roles||{}));S.capMode={...(d.capMode||{})};S.hidden=[...(d.hidden||[])];softRender()},()=>{});
   db.doc('settings/scoring').onSnapshot(s=>{const d=s.data();if(d?.pts){const m=JSON.parse(JSON.stringify(DEF_PTS));for(const f in d.pts)Object.assign(m[f]||(m[f]={}),d.pts[f]);S.pts=m;softRender()}},()=>{});
 })();
 </script>
