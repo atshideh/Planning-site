@@ -451,7 +451,7 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
         const docs = Object.fromEntries(cache);
         const results = batch.map(o => { try { applyOp(docs, o); return null; } catch (e) { return e; } });
         const body = JSON.stringify({ savedAt: new Date().toISOString(), docs }, null, 0);
-        const r = await gh(repoUrl(`/contents/${DB_PATH}`), { method: 'PUT', body: JSON.stringify({ message: `planning: ${batch.length} تغییر توسط ${me.login}`, content: enc(body), branch: CFG.branch, ...(sha ? { sha } : {}) }) });
+        const r = await gh(repoUrl(`/contents/${DB_PATH}`), { method: 'PUT', body: JSON.stringify({ message: `planning: ${batch.length} تغییر توسط ${me.name || me.login}`, content: enc(body), branch: CFG.branch, ...(sha ? { sha } : {}) }) });
         if (r.ok) {
           const j = await r.json(); sha = j.content.sha; etag = null;
           for (const [p, v] of Object.entries(docs)) if (JSON.stringify(cache.get(p)) !== JSON.stringify(v)) { cache.set(p, v); changed(p); }
@@ -530,60 +530,167 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
     id: async () => { await ready; return me.login; },
     can: async perm => { await ready; return perm === 'data.write' ? role !== 'viewer' : true; },
     isOwner: async () => { await ready; return role === 'owner'; },
-    profiles: async ids => { const out = {}; for (const id of ids || []) { if (!(id in names)) { try { const u = await ghJson(`${API}/users/${encodeURIComponent(id)}`); names[id] = u.name || u.login; } catch { names[id] = id; } } out[id] = { name: names[id] }; } return out; }
+    profiles: async ids => { const out = {}; for (const id of ids || []) { if (String(id).startsWith('team:')) { out[id] = { name: String(id).slice(5) }; continue; } if (!(id in names)) { try { const u = await ghJson(`${API}/users/${encodeURIComponent(id)}`); names[id] = u.name || u.login; } catch { names[id] = id; } } out[id] = { name: names[id] }; } return out; }
   };
   const downloads = { async save({ filename, data }) { const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])); const a = document.createElement('a'); a.href = url; a.download = filename || 'download'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000); } };
 
-  /* ---------- login screen ---------- */
+  /* ---------- login ----------
+     Two ways in:
+     1) team login (no GitHub account): name + team password. The owner stores two fine-grained GitHub tokens
+        (read-only and read/write, limited to the data repo) in access.json on the public site, each encrypted
+        with a password (PBKDF2 600k + AES-GCM). The password that decrypts an entry gives that role and token.
+     2) GitHub token (owner, or anyone invited as a collaborator). */
+  const SESSION_KEY = 'atlas_session';
+  const SITE = { owner: CFG.siteOwner || CFG.owner, repo: CFG.siteRepo || 'Planning-site', file: 'access.json' };
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  async function keyFrom(password, salt) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function seal(role, tok, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await keyFrom(password, salt), new TextEncoder().encode(JSON.stringify({ token: tok })));
+    return { role, salt: b64(salt), iv: b64(iv), ct: b64(ct), at: new Date().toISOString() };
+  }
+  async function unseal(entry, password) {
+    try { const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(entry.iv) }, await keyFrom(password, unb64(entry.salt)), unb64(entry.ct)); return JSON.parse(new TextDecoder().decode(pt)).token; } catch { return null; }
+  }
+  async function loadAccess() { try { const r = await fetch((CFG.accessUrl || './access.json') + '?t=' + Date.now(), { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } }
+
   const CSS = `#ghlogin{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#F4F6F8;font-family:Vazirmatn,Tahoma,sans-serif;color:#1F2328;padding:16px;overflow:auto}
-#ghlogin form{width:100%;max-width:520px;background:#fff;border:1px solid #D8DEE4;border-radius:16px;padding:26px 24px;display:flex;flex-direction:column;gap:12px}
-#ghlogin h1{margin:0;font-size:20px}#ghlogin p,#ghlogin li{margin:0;color:#5E6A75;font-size:13px;line-height:1.9}#ghlogin ol{margin:0;padding-inline-start:20px}
+#ghlogin form,#ghlogin .box{width:100%;max-width:540px;background:#fff;border:1px solid #D8DEE4;border-radius:16px;padding:26px 24px;display:flex;flex-direction:column;gap:12px}
+#ghlogin h1{margin:0;font-size:20px}#ghlogin h2{margin:6px 0 0;font-size:15px}#ghlogin p,#ghlogin li{margin:0;color:#5E6A75;font-size:13px;line-height:1.9}#ghlogin ol{margin:0;padding-inline-start:20px}
 #ghlogin a{color:#1F7A8C;font-weight:700}#ghlogin code{background:#F4F6F8;border-radius:4px;padding:0 4px;direction:ltr;display:inline-block}
-#ghlogin input{font:inherit;font-size:14px;padding:10px 12px;border:1px solid #D8DEE4;border-radius:10px;direction:ltr}
+#ghlogin label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600}
+#ghlogin input{font:inherit;font-size:14px;padding:10px 12px;border:1px solid #D8DEE4;border-radius:10px}
+#ghlogin input.ltr{direction:ltr}
 #ghlogin button{font:inherit;font-weight:700;font-size:15px;padding:11px;border:0;border-radius:10px;background:#1F7A8C;color:#fff;cursor:pointer}
-#ghlogin .e{color:#CF222E;font-size:13px;min-height:1.2em;font-weight:600}`;
-  function showLogin(message) {
+#ghlogin button.link{background:none;color:#1F7A8C;padding:4px;font-size:13px}#ghlogin button.sec{background:#fff;color:#1F2328;border:1px solid #D8DEE4;font-size:13px;padding:8px}
+#ghlogin .e{color:#CF222E;font-size:13px;min-height:1.2em;font-weight:600}#ghlogin .ok{color:#1A7F37}
+#ghlogin .row{display:flex;gap:8px;align-items:flex-end}#ghlogin .row>label{flex:1}
+#ghlogin fieldset{border:1px solid #D8DEE4;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}#ghlogin legend{font-weight:800;padding:0 4px}`;
+  function overlay(html) {
+    let el = document.getElementById('ghlogin'); if (el) el.remove();
+    el = document.createElement('div'); el.id = 'ghlogin'; el.dir = 'rtl'; el.innerHTML = `<style>${CSS}</style>${html}`;
+    document.body.appendChild(el); return el;
+  }
+  const whenBody = () => new Promise(r => document.body ? r() : document.addEventListener('DOMContentLoaded', r));
+  async function showLogin(message, mode) {
+    await whenBody();
+    const access = await loadAccess();
+    const team = mode !== 'token' && access && (access.entries || []).length;
     return new Promise(resolve => {
-      const go = () => {
-        let el = document.getElementById('ghlogin'); if (el) el.remove();
-        el = document.createElement('div'); el.id = 'ghlogin'; el.dir = 'rtl';
-        el.innerHTML = `<style>${CSS}</style><form><h1>ورود به پلنینگ اطلس</h1>
-          <p>ورود با حساب گیت‌هاب شماست. مدیر صفحه باید شما را به ریپوی <code>${CFG.owner}/${CFG.repo}</code> دعوت کرده باشد: دسترسی Read یعنی فقط مشاهده و Write یعنی ویرایش.</p>
-          <ol><li>یک توکن بسازید: <a href="https://github.com/settings/tokens/new?scopes=repo&description=Atlas%20planning" target="_blank" rel="noopener">ساخت توکن در گیت‌هاب</a> (scope: <code>repo</code>، مدت را ۹۰ روز بگذارید).</li>
-          <li>توکن ساخته‌شده را این‌جا بچسبانید. فقط در همین مرورگر نگه داشته می‌شود.</li></ol>
-          <input id="ght" type="password" placeholder="ghp_…" autocomplete="off" required>
-          <div class="e" id="ghe">${message || ''}</div><button type="submit">ورود</button></form>`;
-        document.body.appendChild(el);
-        el.querySelector('form').addEventListener('submit', ev => { ev.preventDefault(); const t = el.querySelector('#ght').value.trim(); if (t) { el.querySelector('button').disabled = true; resolve({ t, el }); } });
-      };
-      document.body ? go() : document.addEventListener('DOMContentLoaded', go);
+      const el = overlay(team ? `<form><h1>ورود به پلنینگ اطلس</h1>
+          <p>نام خودتان و رمز تیم را که مدیر صفحه داده وارد کنید. رمز مشاهده فقط اجازه دیدن می‌دهد و رمز ویرایش اجازه تغییر.</p>
+          <label>نام شما<input id="ghn" autocomplete="name" placeholder="مثلاً هانیه زرقامی" required></label>
+          <label>رمز تیم<input id="ghp" type="password" class="ltr" autocomplete="current-password" required></label>
+          <div class="e" id="ghe">${message || ''}</div><button type="submit">ورود</button>
+          <button type="button" class="link" id="ghmode">ورود مدیر با توکن گیت‌هاب</button></form>`
+        : `<form><h1>ورود به پلنینگ اطلس</h1>
+          <p>ورود با توکن گیت‌هاب (مدیر صفحه، یا کسی که به ریپوی <code>${CFG.owner}/${CFG.repo}</code> دعوت شده).</p>
+          <ol><li><a href="https://github.com/settings/tokens/new?scopes=repo&description=Atlas%20planning" target="_blank" rel="noopener">ساخت توکن در گیت‌هاب</a> (scope: <code>repo</code>، مدت ۹۰ روز).</li><li>توکن را این‌جا بچسبانید؛ فقط در همین مرورگر نگه داشته می‌شود.</li></ol>
+          <input id="ght" type="password" class="ltr" placeholder="ghp_…" autocomplete="off" required>
+          <div class="e" id="ghe">${message || ''}</div><button type="submit">ورود</button>
+          ${access && (access.entries || []).length ? '<button type="button" class="link" id="ghmode">ورود تیم با نام و رمز</button>' : ''}</form>`);
+      const m = el.querySelector('#ghmode'); if (m) m.onclick = () => { el.remove(); resolve({ switchTo: team ? 'token' : 'team' }); };
+      el.querySelector('form').addEventListener('submit', async ev => {
+        ev.preventDefault(); const btn = el.querySelector('button[type=submit]'); btn.disabled = true;
+        if (!team) { resolve({ kind: 'token', token: el.querySelector('#ght').value.trim(), el }); return; }
+        const name = el.querySelector('#ghn').value.trim(), pw = el.querySelector('#ghp').value;
+        btn.textContent = 'در حال بررسی…';
+        for (const ent of access.entries) { const t = await unseal(ent, pw); if (t) { resolve({ kind: 'team', token: t, role: ent.role, name, el }); return; } }
+        el.querySelector('#ghe').textContent = 'رمز تیم درست نیست'; btn.disabled = false; btn.textContent = 'ورود';
+      });
     });
   }
   async function signIn() {
-    let message = '';
-    token = lsGet(TOKEN_KEY);
+    let message = '', mode = null;
+    let sess = null; try { sess = JSON.parse(lsGet(SESSION_KEY) || 'null'); } catch {}
+    if (!sess && lsGet(TOKEN_KEY)) sess = { kind: 'token', token: lsGet(TOKEN_KEY) };
     for (;;) {
       let el = null;
-      if (!token) { const r = await showLogin(message); token = r.t; el = r.el; }
+      if (!sess) { const r = await showLogin(message, mode); if (r.switchTo) { mode = r.switchTo; message = ''; continue; } sess = r; el = r.el; delete sess.el; }
       try {
-        me = await ghJson(`${API}/user`);
-        const repo = await ghJson(repoUrl(''));
-        const pr = repo.permissions || {};
-        role = pr.admin ? 'owner' : (pr.push || pr.maintain) ? 'editor' : 'viewer';
-        lsSet(TOKEN_KEY, token); if (el) el.remove(); return;
+        token = sess.token;
+        if (sess.kind === 'team') {
+          const repo = await ghJson(repoUrl(''));            /* proves the token works on the data repo */
+          role = sess.role === 'editor' ? 'editor' : 'viewer'; /* the token itself limits what can be written */
+          me = { login: 'team:' + sess.name, name: sess.name };
+          void repo;
+        } else {
+          const u = await ghJson(`${API}/user`); const repo = await ghJson(repoUrl('')); const pr = repo.permissions || {};
+          role = pr.admin ? 'owner' : (pr.push || pr.maintain) ? 'editor' : 'viewer'; me = { login: u.login, name: u.name || u.login };
+        }
+        lsSet(SESSION_KEY, JSON.stringify(sess)); lsSet(TOKEN_KEY, null); if (el) el.remove(); return;
       } catch (e) {
-        message = e.status === 404 ? 'به ریپوی داده دسترسی ندارید؛ از مدیر صفحه بخواهید شما را دعوت کند (و دعوت را در گیت‌هاب بپذیرید).' : e.status === 401 ? 'توکن نامعتبر یا منقضی است.' : 'اتصال به گیت‌هاب برقرار نشد: ' + e.message;
-        token = null; lsSet(TOKEN_KEY, null); if (el) el.remove();
+        message = e.status === 404 ? (sess.kind === 'team' ? 'دسترسی تیم منقضی یا لغو شده؛ به مدیر صفحه خبر دهید.' : 'به ریپوی داده دسترسی ندارید؛ از مدیر صفحه بخواهید شما را دعوت کند.') : e.status === 401 ? (sess.kind === 'team' ? 'دسترسی تیم منقضی شده؛ به مدیر صفحه خبر دهید.' : 'توکن نامعتبر یا منقضی است.') : 'اتصال به گیت‌هاب برقرار نشد: ' + e.message;
+        mode = sess.kind === 'token' ? 'token' : null; sess = null; token = null; lsSet(SESSION_KEY, null); lsSet(TOKEN_KEY, null); if (el) el.remove();
       }
     }
   }
+
+  /* owner: set the two team passwords */
+  async function teamAccessPanel() {
+    const access = (await loadAccess()) || { version: 1, entries: [] };
+    const has = r => access.entries.some(e => e.role === r);
+    const fg = 'https://github.com/settings/personal-access-tokens/new';
+    const genPw = () => { const a = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return [...crypto.getRandomValues(new Uint32Array(14))].map(x => a[x % a.length]).join(''); };
+    const el = overlay(`<div class="box"><h1>دسترسی تیم بدون حساب گیت‌هاب</h1>
+      <p>برای هر نقش یک توکن «Fine-grained» در گیت‌هاب خودتان بسازید: <a href="${fg}" target="_blank" rel="noopener">ساخت توکن</a>. در فرم گیت‌هاب: Repository access ← Only select repositories ← <code>${CFG.repo}</code>. در Permissions ← Repository permissions ← <b>Contents</b>: برای مشاهده <b>Read-only</b>، برای ویرایش <b>Read and write</b>. مدت را تا یک سال بگذارید.</p>
+      <p>هر توکن با رمزی که این‌جا می‌گذارید رمزنگاری و در سایت ذخیره می‌شود. رمز را به اعضای تیم بدهید؛ آن‌ها فقط نام خودشان و همین رمز را وارد می‌کنند. برای لغو دسترسی، توکن را در گیت‌هاب حذف کنید یا رمز را عوض کنید.</p>
+      <fieldset><legend>فقط مشاهده ${has('viewer') ? '<span class="ok">(تنظیم شده)</span>' : ''}</legend>
+        <label>توکن Read-only<input id="tv" class="ltr" type="password" placeholder="github_pat_…"></label>
+        <div class="row"><label>رمز مشاهده (حداقل ۱۰ حرف)<input id="pv" class="ltr"></label><button type="button" class="sec" data-gen="pv">رمز تصادفی</button></div></fieldset>
+      <fieldset><legend>ویرایش ${has('editor') ? '<span class="ok">(تنظیم شده)</span>' : ''}</legend>
+        <label>توکن Read and write<input id="te" class="ltr" type="password" placeholder="github_pat_…"></label>
+        <div class="row"><label>رمز ویرایش (حداقل ۱۰ حرف)<input id="pe" class="ltr"></label><button type="button" class="sec" data-gen="pe">رمز تصادفی</button></div></fieldset>
+      <p>هر بخش را خالی بگذارید تا همان قبلی بماند.</p>
+      <div class="e" id="ae"></div>
+      <div class="row"><button type="button" id="asave">ذخیره در سایت</button><button type="button" class="sec" id="ax">بستن</button>${access.entries.length ? '<button type="button" class="sec" id="aoff">لغو همه دسترسی‌های تیم</button>' : ''}</div></div>`);
+    el.querySelectorAll('[data-gen]').forEach(b => b.onclick = () => { el.querySelector('#' + b.dataset.gen).value = genPw(); });
+    el.querySelector('#ax').onclick = () => el.remove();
+    const msg = (t, ok) => { const e = el.querySelector('#ae'); e.textContent = t; e.className = ok ? 'e ok' : 'e'; };
+    async function publish(entries) {
+      const url = `${API}/repos/${SITE.owner}/${SITE.repo}/contents/${SITE.file}`;
+      const cur = await gh(url + '?ref=main'); const curSha = cur.ok ? (await cur.json()).sha : null;
+      await ghJson(url, { method: 'PUT', body: JSON.stringify({ message: 'planning: دسترسی تیم به‌روز شد', content: enc(JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), entries }, null, 1)), branch: 'main', ...(curSha ? { sha: curSha } : {}) }) });
+    }
+    const off = el.querySelector('#aoff'); if (off) off.onclick = async () => { if (!confirm('همه رمزهای تیم باطل شود؟ (توکن‌ها را در گیت‌هاب هم حذف کنید)')) return; try { await publish([]); msg('دسترسی‌های تیم لغو شد. یکی دو دقیقه طول می‌کشد تا سایت به‌روز شود.', true); } catch (e) { msg('ذخیره نشد: ' + e.message); } };
+    el.querySelector('#asave').onclick = async () => {
+      const pairs = [['viewer', 'tv', 'pv', false], ['editor', 'te', 'pe', true]];
+      let entries = access.entries.slice(); let changedAny = false;
+      try {
+        for (const [r, ti, pi, needPush] of pairs) {
+          const t = el.querySelector('#' + ti).value.trim(), p = el.querySelector('#' + pi).value;
+          if (!t && !p) continue;
+          if (!t || !p) throw new Error('برای هر نقش هم توکن لازم است هم رمز');
+          if (p.length < 10) throw new Error('رمز باید حداقل ۱۰ حرف باشد');
+          msg('در حال بررسی توکن ' + (r === 'editor' ? 'ویرایش' : 'مشاهده') + '…', true);
+          const ok = await fetch(repoUrl(`/contents/${DB_PATH}?ref=${CFG.branch}`), { headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json' } });
+          if (ok.status === 401 || ok.status === 403 || (ok.status === 404 && !(await fetch(repoUrl(''), { headers: { Authorization: 'Bearer ' + t } })).ok)) throw new Error('این توکن به ریپوی ' + CFG.repo + ' دسترسی ندارد');
+          if (needPush === false) {
+            /* a viewer token must not be able to write: try to read the permission the token itself carries */
+            const probe = await fetch(repoUrl(`/contents/__atlas_probe__?ref=${CFG.branch}`), { method: 'PUT', headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json' }, body: JSON.stringify({ message: 'probe', content: '', branch: '__no_such_branch__' }) });
+            if (probe.status !== 403) throw new Error('توکن «مشاهده» اجازه نوشتن دارد؛ در گیت‌هاب Contents را Read-only بگذارید');
+          }
+          entries = entries.filter(e => e.role !== r); entries.push(await seal(r, t, p)); changedAny = true;
+        }
+        if (!changedAny) { msg('چیزی وارد نشده'); return; }
+        await publish(entries);
+        msg('ذخیره شد. یکی دو دقیقه بعد اعضای تیم با نام خودشان و رمز وارد می‌شوند. رمزها را جای امنی نگه دارید؛ این‌جا دوباره نشان داده نمی‌شوند.', true);
+      } catch (e) { msg(e.message); }
+    };
+  }
+
   function userBar() {
     const roles = { owner: 'مدیر', editor: 'ویرایش', viewer: 'فقط مشاهده' };
     const bar = document.createElement('div'); bar.dir = 'rtl';
     bar.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:9999;display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d8dee4;border-radius:999px;padding:6px 12px;font:13px Vazirmatn,Tahoma,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.08);color:#1f2328';
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    bar.innerHTML = `<b>${esc(me.name || me.login)}</b><span style="color:#6a737d">${roles[role]}</span><span id="ghsave" style="color:#6a737d"></span>${role === 'owner' ? `<a href="https://github.com/${CFG.owner}/${CFG.repo}/settings/access" target="_blank" rel="noopener" style="color:#1F7A8C;font-weight:700;text-decoration:none">کاربران</a>` : ''}<button type="button" style="font:inherit;border:0;background:none;color:#cf222e;cursor:pointer;padding:0">خروج</button>`;
-    bar.querySelector('button').onclick = () => { lsSet(TOKEN_KEY, null); location.reload(); };
+    bar.innerHTML = `<b>${esc(me.name || me.login)}</b><span style="color:#6a737d">${roles[role]}</span><span id="ghsave" style="color:#6a737d"></span>${role === 'owner' ? `<button type="button" id="ghteam" style="font:inherit;border:0;background:none;color:#1F7A8C;font-weight:700;cursor:pointer;padding:0">دسترسی تیم</button>` : ''}<button type="button" id="ghout" style="font:inherit;border:0;background:none;color:#cf222e;cursor:pointer;padding:0">خروج</button>`;
+    bar.querySelector('#ghout').onclick = () => { lsSet(SESSION_KEY, null); lsSet(TOKEN_KEY, null); location.reload(); };
+    const t = bar.querySelector('#ghteam'); if (t) t.onclick = () => teamAccessPanel();
     document.body.appendChild(bar);
     setInterval(() => { const s = document.getElementById('ghsave'); if (s) { s.textContent = saveError || (pending.length || flushing ? 'در حال ذخیره در گیت‌هاب…' : ''); s.style.color = saveError ? '#cf222e' : '#6a737d'; } }, 500);
   }
