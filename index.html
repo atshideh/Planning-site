@@ -279,7 +279,7 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
 .sc-empty{color:var(--muted);font-size:12px}
 @media (max-width:760px){.sc-grid{grid-template-columns:1fr}.sc-h{display:none}}
 .eis .hl{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}.eis input.hrs::placeholder{color:var(--muted);opacity:.55;font-weight:400;font-style:italic}.eis input.hrs{width:84px;font-weight:700;text-align:center;border:1.5px solid var(--accent,#1F7A8C);border-radius:8px;padding:4px}
-.done-h{margin:22px 0 8px;font-size:18px}.done-board .rb{opacity:.92}.board-h .btn.no-export{margin-top:6px}
+.sec-h{position:relative;z-index:4;display:flex;align-items:center;border-top:2px solid var(--line);background:var(--surface);padding:6px 0}.sec-h span{position:sticky;inset-inline-start:0;font-weight:800;font-size:14px;padding:3px 12px;border-radius:999px;background:var(--band);color:var(--band-ink)}.sec-h.done span{background:var(--good);color:#fff}
 .rolerow td{border-top:0!important;padding-top:0!important}.roles{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;font-size:12px}.roles label{display:flex;flex-direction:column;gap:2px;color:var(--muted);font-weight:600}.roles .rin input{width:62px}.roles .rmode select{min-width:140px}
 .rchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.rchip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px}.rchip.ok{border-color:var(--good);color:var(--good)}.rchip.over{border-color:var(--bad);color:var(--bad);font-weight:700}.rchip.warn{border-style:dashed;color:var(--muted)}
 .rhbox{flex-basis:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}.rhbox legend{font-weight:700;padding:0 4px}.rhbox input{width:72px}
@@ -1099,23 +1099,28 @@ function renderPrio(ps){
 
 const DC=d=>d+2; /* grid column of day d (column 1 = team label) */
 function renderRoadmap(ps){
-  const open=renderBoard(ps,{has:p=>planned(p).length>0,sched:schedule,sid:'scroller',bid:'board',gid:'rmgrid',title:'رودمپ پاییز و زمستان ۱۴۰۵',sub:'پاییز: مهر تا دی · زمستان: بهمن تا فروردین ۱۴۰۶ — اپیک‌های تعهدشده تیم‌ها (در جریان و برنامه‌ریزی‌شده)',empty:'هیچ اپیکی با تصمیم «تعهد» یا «استرچ» نیست.'});
-  const done=S.showDoneBoard===false?'':`<h2 class="done-h">کارهای انجام‌شده</h2>`+renderBoard(ps,{done:true,has:p=>[...S.epics.values()].some(e=>e.project===p&&isDone(e)),sched:scheduleDone,sid:'scroller-done',bid:'board-done',gid:'rmgrid-done',title:'کارهای انجام‌شده — پاییز و زمستان ۱۴۰۵',sub:'هر کار روی تاریخ‌های Jira یا از شروع تا تاریخ «انجام شد» — جدا از برنامه، با به‌روزرسانی خودش',empty:'هنوز کاری انجام نشده.'});
+  /* one board, two sections: the plan, then the work already done (positioned on its real dates) */
+  const sections=[{title:'در جریان و برنامه‌ریزی‌شده',has:p=>planned(p).length>0,sched:schedule}];
+  if(S.showDoneBoard!==false)sections.push({title:'انجام‌شده',done:true,has:p=>[...S.epics.values()].some(e=>e.project===p&&isDone(e)),sched:scheduleDone});
+  const open=renderBoard(ps,{sections,sid:'scroller',bid:'board',gid:'rmgrid',title:'رودمپ پاییز و زمستان ۱۴۰۵',sub:'پاییز: مهر تا دی · زمستان: بهمن تا فروردین ۱۴۰۶ — اپیک‌های تعهدشده تیم‌ها و کارهای انجام‌شده',empty:'هیچ اپیکی با تصمیم «تعهد» یا «استرچ» نیست.'});
+  const done='';
   return `<div class="rm-ctl">
       <label class="check"><input type="checkbox" id="withStretch" ${S.withStretch?'checked':''}> نمایش استرچ‌ها</label>
-      <label class="check"><input type="checkbox" id="showDoneBoard" ${S.showDoneBoard!==false?'checked':''}> نمایش بخش «کارهای انجام‌شده»</label>
+      <label class="check"><input type="checkbox" id="showDoneBoard" ${S.showDoneBoard!==false?'checked':''}> نمایش کارهای انجام‌شده در رودمپ</label>
       <span class="sub">اپیک‌هایی که Target start و Target end دارند دقیقاً روی همان تاریخ‌های Jira می‌نشینند (نوار با خط زیرین). اپیک‌های In Progress که Target end آن‌ها گذشته، از تابستان کشیده شده‌اند و تا ۳۰ آذر نشان داده می‌شوند. بقیه به ترتیب اولویت از هفته جاری چیده می‌شوند تا تعداد کار هم‌زمان هر تیم از سقفش بیشتر نشود؛ طولشان از Effort است (XS=۱، S=۲، M=۴، L=۶، XL=۸، XXL=۱۲ هفته). ${S.canWrite?'هر نوار را می‌توانید بکشید؛ برای برگشت، در «جزئیات» شروع را «خودکار» کنید.':''}</span>
     </div>`+open+done;
 }
 function renderBoard(ps,o){
-  const shown=ps.filter(p=>(S.proj==='ALL'||S.proj===p)&&o.has(p));
   const END=DC(TOTAL_DAYS);
   let cells='';let row=3;
   cells+=`<div class="corner" style="grid-column:1;grid-row:1/3">تیم</div>`;
   MONTHS.forEach((m,i)=>{cells+=`<div class="mh m${i+1}" style="grid-column:${DC(MSTART[i])}/${DC(MSTART[i]+MLEN[i])};grid-row:1">${m}</div>`});
   for(let w=0;w<NWEEKS;w++)cells+=`<div class="wk" data-w="${w}" style="grid-column:${DC(7*w)}/${DC(Math.min(7*w+7,TOTAL_DAYS))};grid-row:2" title="${wk2fa(w)}">${fa(w+1)}</div>`;
   const lanes=[];
-  for(const p of shown){const sch=o.sched(p);lanes.push({p,sch,row});row+=sch.rows}
+  const heads=[];
+  for(const sec of o.sections){const shown=ps.filter(p=>(S.proj==='ALL'||S.proj===p)&&sec.has(p));if(!shown.length)continue;
+    if(o.sections.length>1){heads.push({row,title:sec.title,done:sec.done,n:shown.length});row++}
+    for(const p of shown){const sch=sec.sched(p);lanes.push({p,sch,row,done:!!sec.done});row+=sch.rows}}
   if(!lanes.length){cells+=`<div class="rm-empty" style="grid-row:3">${o.empty}</div>`;row=4}
   const last=row;
   MONTHS.forEach((m,i)=>{cells+=`<div class="mdiv ${i>=4?'winter':''}" style="grid-column:${DC(MSTART[i])}/${DC(MSTART[i]+MLEN[i])};grid-row:3/${last}"></div>`});
@@ -1124,21 +1129,22 @@ function renderBoard(ps,o){
   {const W=workCalc();if(W.t0>0&&W.t0<TOTAL_DAYS){
     cells+=`<div class="past" style="grid-column:2/${DC(W.t0)};grid-row:3/${last}"></div>`;
     cells+=`<div class="today" style="grid-column:${DC(W.t0)};grid-row:2/${last};--f:0%"><span>امروز ${jal(W.t0)}</span></div>`;}}
-  for(const {p,sch,row:r} of lanes){
+  for(const h of heads)cells+=`<div class="sec-h${h.done?' done':''}" style="grid-column:1/${END};grid-row:${h.row}"><span>${h.title}</span></div>`;
+  for(const {p,sch,row:r,done:isD} of lanes){
     const L=loadOf(p);const over=sch.items.filter(it=>it.sd>=TOTAL_DAYS).length;
-    if(o.done)cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} کار انجام‌شده</small>${sch.undated?`<small>${fa(sch.undated)} بدون تاریخ (نمایش داده نشد)</small>`:''}</div>`;
+    if(isD)cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} کار انجام‌شده</small>${sch.undated?`<small>${fa(sch.undated)} بدون تاریخ (نمایش داده نشد)</small>`:''}</div>`;
     else cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} اپیک · ${L.known?fa(L.people)+' نفر':'نفرات وارد نشده'}</small><small style="${L.wH>L.capH?'color:var(--bad);font-weight:700':''}">${fa(Math.round(L.wH))}/${fa(L.capH)} نفر-ساعت پاییز</small>${L.known&&L.capH>L.wH?`<small style="color:var(--good);font-weight:700">ظرفیت اضافه ${fa(Math.round(L.capH-L.wH))} نفر-ساعت</small>`:L.wH>L.capH?`<small style="color:var(--bad);font-weight:700">اور ${fa(Math.round(L.wH-L.capH))} نفر-ساعت</small>`:''}<small style="${sch.peak>sch.lim?'color:var(--bad);font-weight:700':''}">کار هم‌زمان: حداکثر ${fa(sch.peak)} / سقف ${fa(sch.lim)}</small>${over?`<small style="color:var(--bad)">${fa(over)} اپیک بعد از فروردین</small>`:''}</div>`;
     cells+=`<div class="lane-bg" style="grid-column:2/${END};grid-row:${r}/${r+sch.rows}"></div>`;
     for(const it of sch.items){
       const e=it.e;const ed=it.ed;if(it.sd>=TOTAL_DAYS||ed<=0)continue;const sd=Math.max(0,it.sd);const pre=it.sd<0;
-      const spill=ed>TOTAL_DAYS;const dc=depClass(e);const drag=S.canWrite&&!o.done?'drag':'';
+      const spill=ed>TOTAL_DAYS;const dc=depClass(e);const drag=S.canWrite&&!isD?'drag':'';
       const tip=`${esc(e.summary)} — ${e.source==='manual'?'جدید':e.key} · ${fmtDay(it.sd)} تا ${fmtDay(ed-1)}${it.src==='jira'?' (تاریخ Jira)':it.src==='drag'?' (جابه‌جاشده)':it.src==='summer'?' (از تابستان کشیده شده؛ باید تا ۳۰ آذر تمام شود)':' (چینش خودکار)'} · ${fa(workW(e))} هفته کار${eppl(e)?' × '+fa(eppl(e))+' نفر':''}${svcOf(e)?' · '+esc(svcTxt(e)):''}${carryOf(e)?' · از فصل قبل':''}${e.started?' · استارت خورده':''}${S.canWrite?' · برای جابه‌جایی بکشید':''}`;
       cells+=`<div class="rb ${it.lab?(it.lab[0]>=Math.min(it.ed,TOTAL_DAYS)?'hl-after':'hl-before'):''} ${e.decision==='stretch'?'stretch':''} ${spill?'spill':''} ${dc} ${drag} src-${it.src}" data-k="${esc(e.key)}" data-s="${it.s}" style="grid-column:${DC(sd)}/${DC(Math.min(ed,TOTAL_DAYS))};grid-row:${r+it.r};background:${teamColor(p)};${e.decision==='stretch'?'':barInk(p)}" title="${tip}">${(()=>{const top=(pre?'<span class="go" title="قبل از مهر شروع شده">▶▶</span>':'')+(e.done?'<span class="ck">✓</span>':'')+(e.started&&!e.done?'<span class="go">▶</span>':'')+(dc==='dep4'?`<span class="dp">بدون سرویس اجرا نمی‌شود</span>`:dc==='dep3'?`<span class="dp">وابسته به سرویس</span>`:dc==='svc-ok'?`<span class="dp">سرویس تحویل شد</span>`:dc==='svc-warn'?`<span class="dp">${WARN}${svcOf(e)==='nodoc'?'سرویس بی‌داکیومنت':'خطای فراخوانی سرویس'}</span>`:'')+(it.src==='summer'?'<span class="dl">تا ۳۰ آذر</span>':'')+(carryOf(e)?'<span class="cy">↻</span>':'');const body=(top?`<div class="rbtop">${top}</div>`:'')+`<span class="tx">${esc(e.summary)}</span>`;if(it.lab){it._lbl=body;return (pre?'<span class="go">▶▶</span>':'')+(e.done?'<span class="ck">✓</span>':'')+(e.started&&!e.done?'<span class="go">▶</span>':'')}return body})()}</div>`;
       if(it.lab)cells+=`<div class="rbl ${it.lab[0]>=Math.min(it.ed,TOTAL_DAYS)?'after':'before'} ${dc}" style="grid-column:${DC(it.lab[0])}/${DC(it.lab[1])};grid-row:${r+it.r};--tc:${teamColor(p)}" title="${tip}">${it._lbl}</div>`;
     }
   }
-  return `    <div class="scroller" id="${o.sid}"><div class="board${o.done?' done-board':''}" id="${o.bid}">
-      <div class="board-h"><div><h2>${o.title}</h2><div class="sub">${o.sub}</div><button class="btn small no-export" data-act="pngof" data-b="${o.bid}">خروجی تصویر این بخش</button></div>
+  return `    <div class="scroller" id="${o.sid}"><div class="board" id="${o.bid}">
+      <div class="board-h"><div><h2>${o.title}</h2><div class="sub">${o.sub}</div></div>
         <div class="legend"><span><i class="lg-bar"></i>تعهد</span><span><i class="lg-bar dash"></i>استرچ</span><span><i class="lg-bar jira"></i>تاریخ از Jira</span><span><i class="lg-dep d3"></i>وابستگی زیاد</span><span><i class="lg-dep d4"></i><b>بدون سرویس اجرا نمی‌شود</b></span><span><i class="lg-dep ok"></i>سرویس تحویل گرفته شد</span><span><i class="lg-dep warn"></i>سرویس بی‌داکیومنت / خطای فراخوانی</span><span><span class="dl" style="font-size:10.5px;font-weight:800;border-radius:4px;padding:0 4px;background:var(--bad);color:#fff">تا ۳۰ آذر</span>از تابستان کشیده شده</span><span>▶ استارت خورده</span><span>↻ از فصل قبل</span><span><span class="ck" style="width:13px;height:13px;border-radius:3px;background:var(--good);color:#fff;font-size:10px;display:inline-flex;align-items:center;justify-content:center">✓</span>انجام شد</span><span>◀ ادامه بعد از فروردین</span></div></div>
       <div class="grid" id="${o.gid}" style="grid-template-rows:42px 24px repeat(${Math.max(1,last-3)},minmax(44px,auto))">${cells}</div>
       <div class="rm-foot"><span>اداره کل تحول دیجیتال · شرکت ارزش‌آفرین اطلس</span><span>به‌روزرسانی: ${new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'medium'}).format(new Date())}</span></div>
