@@ -1,20 +1,20 @@
 {
  "version": 1,
- "updatedAt": "2026-11-16T14:40:23.615Z",
+ "updatedAt": "2026-11-16T14:40:33.794Z",
  "entries": [
   {
    "role": "viewer",
-   "salt": "OR2j5+rN+dw3XQ7n3M6/6Q==",
-   "iv": "12K95QJpdH7MPEgB",
-   "ct": "LRTiiNYV4JC9NS1H5CnJSHr+MfUAajIolU1SAVnsbZ2H9aX8j4bHm4Xr91hqddar+grn/tNvUgH97y7xL223ZfWuhPI3xdGDK2XYMrk8ySwnkGtISC/NJa6dH5Eua1BQnwbPFlnw4IGHfe4fLu1TO1/81WaXnJTrDA==",
-   "at": "2026-11-16T14:40:21.650Z"
+   "salt": "z+qBe0f+yUiGH4wGrHDY1A==",
+   "iv": "q9vPU2k571bnqZyv",
+   "ct": "q/o6utm9xtoaOVVdQwiSRs9ehewDyJ258marjtfViCHTj0eQ4WeLVFDh0n+m8gDeJ2Znq3ZY8wDhSaXefKISOpUOSgIn35pLt6lofS9kOqJJjLUml5r+SLAmMhU6JGnfUqETzzKYlC4LFpQfV3rh6rZWo9kIulTH1A==",
+   "at": "2026-11-16T14:40:32.664Z"
   },
   {
    "role": "editor",
-   "salt": "4VzJaUNyvPfDRkc2GxbhDQ==",
-   "iv": "6+O0ro+7N0WhRn0P",
-   "ct": "ncb9uZjGsjoINN5j04kP47yMq9rBB50vo7n7haLybM7tLlCnrZuyr13fzDsprH6eQJ8dIzppUG3OTfwRl45gwKeG+Enk50v356bKFcVg3H2YnZYJXKGHikAWwI0ggQorKeN8V/YSWd6utrR9Dw4MGhhq42ayGoT5NQ==",
-   "at": "2026-11-16T14:40:22.216Z"
+   "salt": "fLpms3x6V/lTjU5QiPOMKQ==",
+   "iv": "IRmpZ4eBx7tYOXw4",
+   "ct": "zPbFjLl2+nJ3jT9Q1Psm72ZPUa7mh5GpfE+I4uMwvBgoo62XeEULcuItq+NNjw8HzONHpZavY1zvar4CPHfv2BSH7JihEDRDWk4otpDKVefKZezSOnCxC+i8eFoufOYhLwsX4ztZTmqu09gNvKNg6zY5eV1SWIa8lA==",
+   "at": "2026-11-16T14:40:33.278Z"
   }
  ]
 }
