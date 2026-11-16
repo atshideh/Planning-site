@@ -427,10 +427,16 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
   }
 
   /* ---------- writing: queue ops, commit them together, retry on conflict ---------- */
-  let pending = []; let flushTimer = null; let flushing = null;
+  /* Writes return as soon as they are applied locally; commits happen in the background, many changes per commit
+     (an Excel import of hundreds of epics becomes a handful of commits instead of hundreds). */
+  let pending = []; let flushTimer = null; let flushing = null; let firstQueued = 0; let saveError = '';
   function queue(op) {
     if (role === 'viewer') return Promise.reject(err('شما فقط اجازه مشاهده دارید', 'permission_denied'));
-    return new Promise((resolve, reject) => { pending.push({ ...op, resolve, reject }); clearTimeout(flushTimer); flushTimer = setTimeout(flush, 700); });
+    pending.push({ ...op, resolve: () => {}, reject: () => {} });
+    if (!firstQueued) firstQueued = Date.now();
+    clearTimeout(flushTimer);
+    flushTimer = setTimeout(flush, Date.now() - firstQueued > 3000 ? 0 : 800);
+    return Promise.resolve();
   }
   function applyOp(docs, o) {
     if (o.op === 'set') docs[o.path] = clone(o.data);
@@ -439,7 +445,7 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
   }
   async function flush() {
     if (flushing) { await flushing; if (pending.length) return flush(); return; }
-    const batch = pending; pending = []; if (!batch.length) return;
+    flushTimer = null; const batch = pending; pending = []; firstQueued = 0; if (!batch.length) return;
     flushing = (async () => {
       for (let attempt = 0; attempt < 6; attempt++) {
         const docs = Object.fromEntries(cache);
@@ -455,12 +461,15 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
         }
         if (r.status === 409 || r.status === 422) { const d = await readDb(false); applyRemote(d); continue; } /* someone else saved first: merge on top of theirs */
         const j = await r.json().catch(() => ({}));
-        const e = err(r.status === 403 || r.status === 404 ? 'اجازه نوشتن در ریپو را ندارید' : (j.message || 'ذخیره نشد'), r.status === 403 || r.status === 404 ? 'permission_denied' : 'unknown');
-        batch.forEach(o => o.reject(e)); return;
+        if (r.status === 403 || r.status === 404) { saveError = 'اجازه نوشتن در ریپو را ندارید؛ تغییرها ذخیره نشد'; alert(saveError); return; }
+        throw new Error(j.message || r.statusText);
       }
-      batch.forEach(o => o.reject(err('ذخیره نشد؛ دوباره امتحان کنید')));
+      throw new Error('conflict');
     })();
-    try { await flushing; } finally { flushing = null; }
+    try { await flushing; saveError = ''; }
+    catch (e) { /* network or GitHub hiccup: put the changes back and try again shortly */ console.warn(e); saveError = 'ذخیره نشد؛ دوباره تلاش می‌شود…'; pending = batch.concat(pending); clearTimeout(flushTimer); flushTimer = setTimeout(flush, 5000); }
+    finally { flushing = null; }
+    if (pending.length && !flushTimer) flushTimer = setTimeout(flush, 800);
   }
   window.addEventListener('beforeunload', ev => { if (pending.length || flushing) { ev.preventDefault(); ev.returnValue = ''; } });
 
@@ -576,7 +585,7 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
     bar.innerHTML = `<b>${esc(me.name || me.login)}</b><span style="color:#6a737d">${roles[role]}</span><span id="ghsave" style="color:#6a737d"></span>${role === 'owner' ? `<a href="https://github.com/${CFG.owner}/${CFG.repo}/settings/access" target="_blank" rel="noopener" style="color:#1F7A8C;font-weight:700;text-decoration:none">کاربران</a>` : ''}<button type="button" style="font:inherit;border:0;background:none;color:#cf222e;cursor:pointer;padding:0">خروج</button>`;
     bar.querySelector('button').onclick = () => { lsSet(TOKEN_KEY, null); location.reload(); };
     document.body.appendChild(bar);
-    setInterval(() => { const s = document.getElementById('ghsave'); if (s) s.textContent = pending.length || flushing ? 'در حال ذخیره…' : ''; }, 500);
+    setInterval(() => { const s = document.getElementById('ghsave'); if (s) { s.textContent = saveError || (pending.length || flushing ? 'در حال ذخیره در گیت‌هاب…' : ''); s.style.color = saveError ? '#cf222e' : '#6a737d'; } }, 500);
   }
 
   ready = (async () => {
