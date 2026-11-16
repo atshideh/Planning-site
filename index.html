@@ -279,6 +279,7 @@ details.grp[open]>summary .grp-t::before{content:"▾"}
 .sc-empty{color:var(--muted);font-size:12px}
 @media (max-width:760px){.sc-grid{grid-template-columns:1fr}.sc-h{display:none}}
 .eis .hl{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}.eis input.hrs::placeholder{color:var(--muted);opacity:.55;font-weight:400;font-style:italic}.eis input.hrs{width:84px;font-weight:700;text-align:center;border:1.5px solid var(--accent,#1F7A8C);border-radius:8px;padding:4px}
+.pill.spare{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good);font-weight:800}
 .ctbl td.over{color:var(--bad);font-weight:800}.ctbl td.ok{color:var(--good);font-weight:700}.ctbl input.agh{width:96px;font-weight:700;border:1.5px solid var(--accent,#1F7A8C)}
 .diffl{margin:6px 0 0;padding:0;list-style:none;font-size:13px}.diffl li{padding:3px 0;border-bottom:1px dashed var(--line)}
 .lg-dep.ok{outline:2px dashed var(--svc-ok);outline-offset:-2px}.lg-dep.warn{box-shadow:inset 0 0 0 3px var(--svc-warn)}
@@ -1045,7 +1046,7 @@ function renderPrio(ps){
       <div class="proj-h">${S.canWrite?`<button class="sw swb" data-act="color" data-p="${p}" style="background:${teamColor(p)}" title="تغییر رنگ تیم" aria-label="تغییر رنگ تیم"></button>`:`<span class="sw" style="background:${teamColor(p)}"></span>`}<h2>${esc(pname(p))} <span class="mono" style="color:var(--muted)">${p}</span></h2>
         <span class="sub">${fa(all.length)} اپیک · ${fa(all.filter(carryOf).length)} از فصل قبل · ${fa(all.filter(isFallOKR).length)} OKR پاییز</span>
         <span class="spacer"></span>
-        <span class="load" title="نفر-ساعت اپیک‌های تعهدشده در برابر ظرفیت پاییز تا پایان دی (۸ ساعت در روز)">بار ${fa(Math.round(L.wH))} / ظرفیت ${fa(L.capH)} نفر-ساعت${L.wH>L.capH?` · <b style="color:var(--bad)">اور ${fa(Math.round(L.wH-L.capH))}</b>`:''}<span class="meter ${L.wH>L.capH?'over':''}"><i style="width:${pct}%"></i></span></span>
+        <span class="load" title="نفر-ساعت اپیک‌های تعهدشده در برابر ظرفیت پاییز تا پایان دی (۸ ساعت در روز)">بار ${fa(Math.round(L.wH))} / ظرفیت ${fa(L.capH)} نفر-ساعت${L.wH>L.capH?` · <b style="color:var(--bad)">اور ${fa(Math.round(L.wH-L.capH))}</b>`:L.known&&L.capH>L.wH?` · <b style="color:var(--good)">ظرفیت اضافه ${fa(Math.round(L.capH-L.wH))}</b>`:''}<span class="meter ${L.wH>L.capH?'over':''}"><i style="width:${pct}%"></i></span></span>
         <label class="load">نفرات <input class="cap" type="number" min="0" max="200" id="ppl-${p}" data-act="people" data-p="${p}" value="${S.people[p]??''}" placeholder="—" ${S.canWrite?'':'disabled'}></label>
         ${S.canWrite?`<button class="btn small primary" data-act="add" data-p="${p}">+ افزودن اپیک</button>`:''}
       </div>
@@ -1083,7 +1084,7 @@ function renderRoadmap(ps){
     cells+=`<div class="today" style="grid-column:${DC(W.t0)};grid-row:2/${last};--f:0%"><span>امروز ${jal(W.t0)}</span></div>`;}}
   for(const {p,sch,row:r} of lanes){
     const L=loadOf(p);const over=sch.items.filter(it=>it.sd>=TOTAL_DAYS).length;
-    cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} اپیک · ${L.known?fa(L.people)+' نفر':'نفرات وارد نشده'}</small><small style="${L.wH>L.capH?'color:var(--bad);font-weight:700':''}">${fa(Math.round(L.wH))}/${fa(L.capH)} نفر-ساعت پاییز</small><small style="${sch.peak>sch.lim?'color:var(--bad);font-weight:700':''}">کار هم‌زمان: حداکثر ${fa(sch.peak)} / سقف ${fa(sch.lim)}</small>${over?`<small style="color:var(--bad)">${fa(over)} اپیک بعد از فروردین</small>`:''}</div>`;
+    cells+=`<div class="lane-l" style="grid-column:1;grid-row:${r}/${r+sch.rows}"><span class="sw" style="background:${teamColor(p)}"></span>${esc(pname(p))}<small>${fa(sch.items.length)} اپیک · ${L.known?fa(L.people)+' نفر':'نفرات وارد نشده'}</small><small style="${L.wH>L.capH?'color:var(--bad);font-weight:700':''}">${fa(Math.round(L.wH))}/${fa(L.capH)} نفر-ساعت پاییز</small>${L.known&&L.capH>L.wH?`<small style="color:var(--good);font-weight:700">ظرفیت اضافه ${fa(Math.round(L.capH-L.wH))} نفر-ساعت</small>`:L.wH>L.capH?`<small style="color:var(--bad);font-weight:700">اور ${fa(Math.round(L.wH-L.capH))} نفر-ساعت</small>`:''}<small style="${sch.peak>sch.lim?'color:var(--bad);font-weight:700':''}">کار هم‌زمان: حداکثر ${fa(sch.peak)} / سقف ${fa(sch.lim)}</small>${over?`<small style="color:var(--bad)">${fa(over)} اپیک بعد از فروردین</small>`:''}</div>`;
     cells+=`<div class="lane-bg" style="grid-column:2/${END};grid-row:${r}/${r+sch.rows}"></div>`;
     for(const it of sch.items){
       const e=it.e;const ed=it.ed;if(it.sd>=TOTAL_DAYS||ed<=0)continue;const sd=Math.max(0,it.sd);const pre=it.sd<0;
@@ -1129,7 +1130,7 @@ function renderCap(ps){
   const teams=[...new Set([...ps,...Object.keys(S.people)])].sort((a,b)=>{const ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b)}).filter(p=>S.proj==='ALL'||S.proj===p);
   const hol=[...OFFICIAL_HOL.map(h=>({...h,off:true})),...S.holidays].sort((x,y)=>x.i-y.i);
   const over=(cap,w)=>{const d=w-cap;const pct=cap?Math.round(w/cap*100):0;return {d,pct}};
-  const stat=(L)=>{if(!L.known)return '<span class="pill st-Backlog">نفرات وارد نشده</span>';const {d,pct}=over(L.capH,L.wH);return d>0?`<span class="pill st-Blocked">اور ${fa(Math.round(d))} نفر-ساعت (${fa(pct-100)}٪)</span>`:pct>85?'<span class="pill carry">نزدیک سقف</span>':'<span class="pill st-New">در ظرفیت</span>'};
+  const stat=(L)=>{if(!L.known)return '<span class="pill st-Backlog">نفرات وارد نشده</span>';const {d,pct}=over(L.capH,L.wH);return d>0?`<span class="pill st-Blocked">اور ${fa(Math.round(d))} نفر-ساعت (${fa(pct-100)}٪)</span>`:d===0?'<span class="pill carry">دقیقاً پر</span>':`<span class="pill spare" title="می‌شود اپیک دیگری به تعهد این تیم اضافه کرد">ظرفیت اضافه ${fa(Math.round(-d))} نفر-ساعت (${fa(100-pct)}٪ آزاد)</span>${pct>85?' <span class="pill carry">نزدیک سقف</span>':''}`};
   const rowsH=teams.map(p=>{const L=loadOf(p);const left=L.capH-L.wH;
     return `<tr><td><span class="dot" style="background:${teamColor(p)}"></span>${esc(pname(p))} <span class="mono" style="color:var(--muted)">${p}</span></td>
       <td><div class="stepper"><button data-act="pplm" data-p="${p}" ${dis} aria-label="یک نفر کمتر">−</button><input type="number" min="0" max="300" id="cppl-${p}" data-act="people" data-p="${p}" value="${S.people[p]??''}" placeholder="—" ${dis}><button data-act="pplp" data-p="${p}" ${dis} aria-label="یک نفر بیشتر">+</button></div></td>
@@ -1139,13 +1140,13 @@ function renderCap(ps){
       <td class="num"><b>${fa(L.capH)}</b></td>
       <td class="num">${fa(Math.round(L.wH))}<div class="sub">${fa(L.setN)} از ${fa(L.nCom)} اپیک با نفر-ساعت توافقی</div></td>
       <td class="num">${fa(Math.round(L.stH))}</td>
-      <td class="num ${left<0?'over':'ok'}">${left<0?'اور '+fa(Math.round(-left)):fa(Math.round(left))}</td>
+      <td class="num ${left<0?'over':'ok'}">${left<0?'اور '+fa(Math.round(-left)):left>0?'اضافه '+fa(Math.round(left)):'—'}</td>
       <td>${stat(L)}</td>
       <td><input type="text" class="tnote" id="tn-${p}" data-act="tnote" data-p="${p}" value="${esc(S.tnote[p]||'')}" placeholder="مثلاً: ۲ نفر از آذر به تیم دیگر می‌روند" ${dis}></td></tr>`}).join('');
   const rowsW=teams.map(p=>{const L=loadOf(p);const SC=schedule(p);const left=r1(L.cap-L.w);
     return `<tr><td><span class="dot" style="background:${teamColor(p)}"></span>${esc(pname(p))} <span class="mono" style="color:var(--muted)">${p}</span></td>
       <td class="num">${fa(L.people||'—')}</td><td class="num">${fa(L.effW)}</td><td class="num"><b>${fa(L.cap)}</b></td><td class="num">${fa(L.w)}</td><td class="num">${fa(L.st)}</td>
-      <td class="num ${left<0?'over':'ok'}">${left<0?'اور '+fa(r1(-left)):fa(left)}</td><td class="num">${fa(L.winCap)}</td>
+      <td class="num ${left<0?'over':'ok'}">${left<0?'اور '+fa(r1(-left)):left>0?'اضافه '+fa(left):'—'}</td><td class="num">${fa(L.winCap)}</td>
       <td><input class="cap" type="number" min="1" max="40" id="cap-${p}" data-act="cap" data-p="${p}" value="${S.cap[p]??''}" placeholder="${fa(wipLimit(p))}" title="خالی = ۳ کار هم‌زمان" ${dis}></td>
       <td class="num" style="${SC.peak>SC.lim?'color:var(--bad);font-weight:700':''}">${fa(SC.peak)}${SC.overWeeks?` <span class="sub">(${fa(SC.overWeeks)} هفته بیش از سقف)</span>`:''}</td></tr>`}).join('');
   const addable=Object.keys(allTeams()).filter(k=>!teams.includes(k));
@@ -1161,7 +1162,7 @@ function renderCap(ps){
       <ul class="how"><li><b>ملاک اصلی نفر-ساعت است</b>: هر روز کاری حداکثر ۸ ساعت؛ هر نفر-هفته = ۴۰ نفر-ساعت.</li>
       <li><b>ظرفیت محاسبه‌شده تیم</b> = نفرات × ${fa(W.rem)} روز کاری باقی‌مانده تا پایان دی × ۸ ساعت × درصد تمرکز. اگر «نفر-ساعت توافقی» تیم را در جلسه با مدیر تیم وارد کنید، ملاک همان است.</li>
       <li><b>بار هر اپیک</b> = نفر-ساعتی که کنار اپیک وارد می‌کنید. اگر خالی باشد، از Effort تخمین زده می‌شود (هفته‌های Effort × نفرات تیم × ۴۰ ساعت) و با «(تخمین)» نشان داده می‌شود.</li>
-      <li><b>اور</b> = بار تعهدها منهای ظرفیت؛ اگر مثبت باشد قرمز نشان داده می‌شود.</li>
+      <li><b>اور</b> = بار تعهدها بیشتر از ظرفیت (قرمز). <b>ظرفیت اضافه</b> = ظرفیتی که بعد از تعهدها خالی می‌ماند (سبز)؛ یعنی می‌شود اپیک دیگری به تعهد آن تیم اضافه کرد.</li>
       <li><b>درصد تمرکز</b> سهم زمانی است که بعد از جلسات، پشتیبانی و مرخصی واقعاً صرف اپیک‌ها می‌شود (پیش‌فرض ۸۰٪).</li>
       <li>جدول نفر-هفته همان اعداد را تقسیم بر ۴۰ نشان می‌دهد. Effort: XS=۱، S=۲، M=۴، L=۶، XL=۸، XXL=۱۲ هفته کار کل تیم.</li>
       <li>اپیک‌های In Progress که Target end آن‌ها گذشته، <b>از تابستان کشیده شده‌اند</b>: باید تا ۳۰ آذر تمام شوند و بارشان هفته‌های باقی‌مانده تا ۳۰ آذر است.</li>
@@ -1170,10 +1171,10 @@ function renderCap(ps){
       <li>تعطیلات رسمی و جمعه‌ها (و پنجشنبه‌ها طبق تنظیم) از روزهای کاری کم می‌شوند. اپیک‌های «انجام شد» در بار حساب نمی‌شوند.</li></ul>
     </section></div>
     <section class="card"><h2>ظرفیت تیم‌ها — نفر-ساعت</h2><p class="sub">ملاک تصمیم. هر روز حداکثر ۸ ساعت. ستون «نفر-ساعت توافقی» را در جلسه با مدیر هر تیم پر کنید؛ کنار هر اپیک هم می‌شود نفر-ساعت توافقی وارد کرد.</p>
-      <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>تمرکز</th><th>ظرفیت محاسبه‌شده</th><th>نفر-ساعت توافقی</th><th>ظرفیت ملاک</th><th>تعهد</th><th>استرچ</th><th>باقیمانده / اور</th><th>وضعیت</th><th>توضیحات</th></tr></thead><tbody>${rowsH}</tbody></table></div>
+      <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>تمرکز</th><th>ظرفیت محاسبه‌شده</th><th>نفر-ساعت توافقی</th><th>ظرفیت ملاک</th><th>تعهد</th><th>استرچ</th><th>ظرفیت اضافه / اور</th><th>وضعیت</th><th>توضیحات</th></tr></thead><tbody>${rowsH}</tbody></table></div>
     </section>
     <section class="card"><h2>ظرفیت تیم‌ها — نفر-هفته</h2><p class="sub">همان اعداد تقسیم بر ۴۰ ساعت، به‌اضافه کار هم‌زمان.</p>
-      <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>هفته مؤثر هر نفر</th><th>ظرفیت پاییز</th><th>تعهد</th><th>استرچ</th><th>باقیمانده / اور</th><th>ظرفیت زمستان</th><th>سقف کار هم‌زمان</th><th>بیشترین کار هم‌زمان</th></tr></thead><tbody>${rowsW}</tbody></table></div>
+      <div class="tblwrap"><table class="ctbl"><thead><tr><th>تیم</th><th>نفرات</th><th>هفته مؤثر هر نفر</th><th>ظرفیت پاییز</th><th>تعهد</th><th>استرچ</th><th>ظرفیت اضافه / اور</th><th>ظرفیت زمستان</th><th>سقف کار هم‌زمان</th><th>بیشترین کار هم‌زمان</th></tr></thead><tbody>${rowsW}</tbody></table></div>
       <p class="sub">${S.canWrite&&addable.length?`<label class="load" style="display:inline-flex">افزودن تیم از فهرست <select id="addteam" data-act="addteam"><option value="">—</option>${addable.map(k=>`<option value="${k}">${esc(allTeams()[k])} (${k})</option>`).join('')}</select></label>`:''}</p>
       ${S.canWrite?`<div class="newteam"><span class="sub">تیم جدیدی که در فهرست نیست:</span><label class="load">کلید Jira <input type="text" id="nt-key" placeholder="مثلاً CRM" style="width:90px;direction:ltr"></label><label class="load">نام تیم <input type="text" id="nt-name" placeholder="مثلاً CRM Team"></label><label class="load">نفرات <input type="number" id="nt-ppl" min="1" max="300" style="width:64px"></label><button class="btn small" data-act="newteam">افزودن تیم</button></div>`:''}
     </section>`;
@@ -1347,7 +1348,7 @@ $('#xls').addEventListener('click',async()=>{
   const H=['اولویت','کلید','عنوان','تیم','وضعیت Jira','استارت','وابستگی سرویس','تصمیم','از فصل قبل','وضعیت فصل قبل','دلیل','تأثیر کسب‌وکاری','اولویت استراتژیک','ریسک وابستگی','پیچیدگی فنی','Effort','نفر-ساعت','نفر-ساعت توافقی است؟','امتیاز Jira','OKR Cycle','مسئول','شروع','پایان','هفته کار (Effort)','نفرات','نفر-هفته','انجام شد','یادداشت','فیلدهای خالی','وضعیت سرویس','تاریخ سرویس','یادداشت سرویس'];
   const sched={};for(const p of projects()){for(const it of schedule(p).items)sched[it.e.key]=it}
   const line=(e,rank)=>{const it=sched[e.key];return [rank??'',e.source==='manual'?'جدید':e.key,e.summary,pname(e.project),STATUS[e.status]||e.status,e.started?fmtD(e.started):'',e.risk>=4?'بسیار زیاد — بدون سرویس پیاده‌سازی ممکن نیست':e.risk===3?'زیاد':'',DEC[dec(e)]||'بدون تصمیم',summerCarry(e)?'از تابستان — تا ۳۰ آذر':carryOf(e)?'بله':'',carryOf(e)?carryState(e):'',e.reason||'',e.impact?IMP[e.impact]:'',e.strategic?STR[e.strategic]:'',e.risk?RISK[e.risk]:'',e.complexity?CPX[e.complexity]:'',EFF[e.effort]||'',hrsOf(e),hasH(e)?'بله':'تخمین از Effort',e.jiraScore??'',e.okrCycle||'',e.assignee||'',it?fmtDay(it.sd):'',it?fmtDay(it.ed-1):'',workW(e),eppl(e)??'',pw(e),e.done?'بله':'',e.note||'',gaps(e).join('، '),svcOf(e)?SVC[svcOf(e)]:'',e.svcDate!=null?fmtDay(+e.svcDate):'',e.svcNote||'']};
-  const sum=[['تیم','کلید پروژه','کل اپیک','از فصل قبل','تعهد','استرچ','بعداً','حذف','بدون تصمیم','نفرات','هفته مؤثر هر نفر','ظرفیت پاییز (نفر-هفته)','تعهد (نفر-هفته)','استرچ (نفر-هفته)','باقیمانده (نفر-هفته)','ظرفیت زمستان (نفر-هفته)','ظرفیت محاسبه‌شده (نفر-ساعت)','نفر-ساعت توافقی','تعهد (نفر-ساعت)','باقیمانده / اور (نفر-ساعت)','توضیح']];
+  const sum=[['تیم','کلید پروژه','کل اپیک','از فصل قبل','تعهد','استرچ','بعداً','حذف','بدون تصمیم','نفرات','هفته مؤثر هر نفر','ظرفیت پاییز (نفر-هفته)','تعهد (نفر-هفته)','استرچ (نفر-هفته)','ظرفیت اضافه (+) / اور (−) (نفر-هفته)','ظرفیت زمستان (نفر-هفته)','ظرفیت محاسبه‌شده (نفر-ساعت)','نفر-ساعت توافقی','تعهد (نفر-ساعت)','ظرفیت اضافه (+) / اور (−) (نفر-ساعت)','توضیح']];
   for(const p of projects()){const l=[...S.epics.values()].filter(e=>e.project===p);const L=loadOf(p);sum.push([pname(p),p,l.length,l.filter(carryOf).length,...['commit','stretch','later','drop',''].map(d=>l.filter(e=>(e.decision||'')===d).length),L.people,L.effW,L.cap,L.w,L.st,r1(L.cap-L.w),L.winCap,L.calcH,L.agreed??'',Math.round(L.wH),Math.round(L.capH-L.wH),S.tnote[p]||''])}
   {const W=workCalc();sum.push([]);sum.push(['هفته کاری باقی‌مانده تا پایان دی',r1(W.rem/5),W.rem+' روز کاری']);sum.push(['هفته کاری زمستان (بهمن تا فروردین)',r1(W.winTotal/5),W.winTotal+' روز کاری']);sum.push(['هفته تقویمی باقی‌مانده',r1(W.weeksRem),W.calRem+' روز']);sum.push(['کل هفته کاری پاییز',r1(W.total/5),W.total+' روز کاری']);sum.push(['فرض‌ها',`هفته کاری شنبه تا چهارشنبه؛ پنجشنبه ${valTxt('thu',S.thu)}؛ Effort برای کل تیم است؛ ظرفیت = نفرات × هفته کاری باقی‌مانده × درصد تمرکز؛ بار = هفته کار × نفرات تیم؛ سقف پیش‌فرض کار هم‌زمان ۳`])}
   const ws0=styleWS(XLSX.utils.aoa_to_sheet(sum));ws0['!cols']=sum[0].map(()=>({wch:16}));XLSX.utils.book_append_sheet(wb,ws0,'خلاصه');
@@ -1379,9 +1380,9 @@ function buildMD(){
     `> اداره کل تحول دیجیتال · شرکت ارزش‌آفرین اطلس — به‌روزرسانی: ${fmtT(Date.now())}`,'',
     `> پاییز: مهر تا دی (${fa(r1(W.rem/5))} هفته کاری باقی‌مانده) · زمستان: بهمن تا فروردین (${fa(r1(W.winTotal/5))} هفته کاری)`,'',
     '## خلاصه تیم‌ها','');
-  L.push(tbl(['تیم','کلید','اپیک باز','تعهد','استرچ','از فصل قبل','نفرات','ظرفیت (نفر-ساعت)','بار تعهد (نفر-ساعت)','اور (نفر-ساعت)','ظرفیت (نفر-هفته)','بار تعهد (نفر-هفته)','کار هم‌زمان (حداکثر / سقف)','اطلاعات ناقص'],
+  L.push(tbl(['تیم','کلید','اپیک باز','تعهد','استرچ','از فصل قبل','نفرات','ظرفیت (نفر-ساعت)','بار تعهد (نفر-ساعت)','ظرفیت اضافه / اور (نفر-ساعت)','ظرفیت (نفر-هفته)','بار تعهد (نفر-هفته)','کار هم‌زمان (حداکثر / سقف)','اطلاعات ناقص'],
     ps.map(p=>{const l=[...S.epics.values()].filter(e=>e.project===p&&!isDone(e));const Ld=loadOf(p);const sc=sched[p];
-      return [pname(p),'`'+p+'`',l.length,l.filter(e=>dec(e)==='commit').length,l.filter(e=>dec(e)==='stretch').length,l.filter(carryOf).length,Ld.people||'—',Ld.known?Ld.capH:'—',Math.round(Ld.wH),Ld.wH>Ld.capH?Math.round(Ld.wH-Ld.capH):'—',Ld.known?Ld.cap:'—',Ld.w,`${sc.peak} / ${sc.lim}${sc.peak>sc.lim?' ⚠️':''}`,l.filter(e=>gaps(e).length).length]})));
+      return [pname(p),'`'+p+'`',l.length,l.filter(e=>dec(e)==='commit').length,l.filter(e=>dec(e)==='stretch').length,l.filter(carryOf).length,Ld.people||'—',Ld.known?Ld.capH:'—',Math.round(Ld.wH),!Ld.known?'—':Ld.wH>Ld.capH?'اور '+Math.round(Ld.wH-Ld.capH):Ld.capH>Ld.wH?'اضافه '+Math.round(Ld.capH-Ld.wH):'—',Ld.known?Ld.cap:'—',Ld.w,`${sc.peak} / ${sc.lim}${sc.peak>sc.lim?' ⚠️':''}`,l.filter(e=>gaps(e).length).length]})));
   L.push('','🔴 بدون سرویس بیرونی پیاده‌سازی ممکن نیست · 🟠 وابستگی زیاد به سرویس · ⏳ In Progress با Target end گذشته؛ باید تا ۳۰ آذر تمام شود','');
   for(const p of ps){
     const sc=sched[p];const at={};sc.items.forEach(it=>at[it.e.key]=it);
